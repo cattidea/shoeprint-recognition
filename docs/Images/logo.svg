@@ -27,8 +27,6 @@
   <ellipse id="svg_13" cy="151.4375" cx="373.5" fill-opacity="null" stroke-opacity="null" stroke-width="1.5" stroke="#000" fill="#fff"/>
   <ellipse id="svg_14" cy="150.4375" cx="392.5" fill-opacity="null" stroke-opacity="null" stroke-width="1.5" stroke="#000" fill="#fff"/>
   <ellipse stroke="#000" id="svg_15" cy="132.4375" cx="391.5" fill-opacity="null" stroke-opacity="null" stroke-width="1.5" fill="#fff"/>
-  <line stroke-linecap="null" stroke-linejoin="null" id="svg_17" y2="164.4375" x2="212.5" y1="165.4375" x1="216.5" stroke-opacity="null" stroke="#000" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" id="svg_18" y2="146.4375" x2="157.5" y1="147.4375" x1="157.5" stroke-opacity="null" stroke="#000" fill="none"/>
   <rect stroke="#000000" id="svg_21" height="27.000001" width="112.999997" y="248.437499" x="86.500003" stroke-width="0" fill="#ffffff"/>
   <rect stroke="#000000" id="svg_22" height="100.000001" width="25" y="211.437499" x="128.5" stroke-width="0" fill="#ffffff"/>
   <ellipse stroke="#000" rx="20" ry="20" id="svg_6" cy="262.4375" cx="141.5" stroke-width="0" fill="#00bf00"/>

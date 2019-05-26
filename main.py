@@ -1,3 +1,3 @@
-from utils.data import get_shoeprints, get_determine, get_simple_index
+from utils.data import data_import
 
-print(len(get_shoeprints(get_determine(), get_simple_index())))
+print(data_import(3))

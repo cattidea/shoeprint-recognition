@@ -8,7 +8,6 @@ GAMMA = 0.05
 def image2array(img_path, rotate=False, transpose=False):
     """ 将图像转化为向量以及存在标签，可传入旋转、镜像参数对数据进行扩增"""
     arrays = []
-    tags = []
     im = Image.open(img_path).convert('1')
     imgs = [im]
     if rotate:
@@ -18,9 +17,8 @@ def image2array(img_path, rotate=False, transpose=False):
     for img in imgs:
         arr = np.array(img.resize([W, H]))
         tag = get_tag(arr)
-        arrays.append(arr)
-        tags.append(tag)
-    return arrays, tags
+        arrays.append((arr, tag))
+    return arrays
 
 def get_tag(arr):
     """ 对上中下三部分分别打标签，如果该部分鞋印占比高于阈值 GAMMA 则标记为 True"""
