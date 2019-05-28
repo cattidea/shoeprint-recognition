@@ -12,10 +12,11 @@ def image2array(img_path, rotate=False, transpose=False):
     imgs = [im]
     if rotate:
         imgs.append(im.rotate(5))
+        imgs.append(im.rotate(-5))
     if transpose:
         imgs.append(im.transpose(Image.FLIP_LEFT_RIGHT))
     for img in imgs:
-        arr = np.array(img.resize([W, H]))
+        arr = np.array(img.resize([W, H]), dtype=np.bool_).reshape((H, W, 1))
         tag = get_tag(arr)
         arrays.append((arr, tag))
     return arrays

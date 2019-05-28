@@ -86,7 +86,9 @@ def get_determine_scope():
 
 
 def get_img_three_tuples(amplify):
-    """ 获取图片三元组， 可对数据进行扩增 amplify in (1, 9) ，最终结果是乱序的三元组数据
+    """ 获取图片三元组， 可对数据进行扩增 amplify 倍 ，并且分成训练三元组和开发三元组、
+    之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
+    所以开发集理应与训练集也在不同的样式中，下面是测试集的格式，开发集相同
     ``` python
     [
         (
@@ -102,102 +104,91 @@ def get_img_three_tuples(amplify):
     determine_scope = get_determine_scope()
     simple_arrays = get_simple_arrays(amplify)
     shoeprint_arrays = get_shoeprint_arrays(amplify)
-    img_three_tuples = []
+    train_img_three_tuples = []
+    dev_img_three_tuples = []
 
     for i, img_name in enumerate(determine_scope):
         print("get_img_three_tuples {}/{}".format(i, len(determine_scope)), end='\r')
         if img_name in shoeprint_arrays:
             positive_type_num = shoeprint_arrays[img_name]["type_num"]
+            set_type = "train" if random.random() < 0.95 else "dev"
             for negative_type_num in determine_scope[img_name]:
                 if negative_type_num == positive_type_num:
                     continue
 
                 img_three_tuple_list = [(a, p, n) for a in shoeprint_arrays[img_name]["imgs"]
-                                        for p in simple_arrays[positive_type_num]["imgs"]
-                                        for n in simple_arrays[negative_type_num]["imgs"]]
+                                                  for p in simple_arrays[positive_type_num]["imgs"]
+                                                  for n in simple_arrays[negative_type_num]["imgs"]]
 
                 if amplify:
                     img_three_tuple_list = random.sample(
-                        img_three_tuple_list, 3*amplify)
+                        img_three_tuple_list, amplify)
 
-                img_three_tuples.extend(img_three_tuple_list)
-    random.shuffle(img_three_tuples)
-    return img_three_tuples
+                if set_type == "train":
+                    train_img_three_tuples.extend(img_three_tuple_list)
+                elif set_type == "dev":
+                    dev_img_three_tuples.extend(img_three_tuple_list)
+    random.shuffle(train_img_three_tuples)
+    random.shuffle(dev_img_three_tuples)
+    return train_img_three_tuples, dev_img_three_tuples
 
 
-def get_data_set(amplify):
+def get_data_set(data_set, img_three_tuples, type="train"):
     """ 将三元组数据转化为数据集格式
     ``` h5
     {
         "X": [
-            [A_img, P_img, N_img], # 每个都是 (30, 84)
-            ...
+            [A_img, ...],
+            [P_img, ...],
+            [N_img, ...] # 每个都是 (78, 30, 1)
             ]
         "X_tag": [
-            [A_tag, P_tag, N_tag], # 每个都是 (3, )
-            ...
+            [A_tag, ...],
+            [P_tag, ...],
+            [N_tag, ...], # 每个都是 (3, )
         ]
     }
     ```
     """
 
-    img_three_tuples = get_img_three_tuples(amplify)
     length = len(img_three_tuples)
-    data_set = {}
 
-    X = np.zeros(shape=(length, 3, H, W), dtype=np.bool_)
-    X_tag = np.zeros(shape=(length, 3, 3), dtype=np.bool_)
+    X = np.zeros(shape=(3, length, H, W, 1), dtype=np.bool_)
+    X_tag = np.zeros(shape=(3, length, 3), dtype=np.bool_)
 
     for i in range(length):
         for j in range(3):
-            X[i][j], X_tag[i][j] = img_three_tuples[i][j]
+            X[j][i], X_tag[j][i] = img_three_tuples[i][j]
 
-    data_set["X"] = X
-    data_set["X_tag"] = X_tag
-    random_divide(data_set)
+    data_set["X_" + type + "_set"] = X
+    data_set["X_tag_" + type + "_set"] = X_tag
     return data_set
-
-
-def random_divide(data_set, proportion=(0.95, 0.05)):
-    """ 将数据集切分为训练集与开发集 """
-    length = len(data_set)
-    indexes = list(np.random.permutation(length))
-    train_size = round(proportion[0] * length)
-    dev_size = round(proportion[1] * length)
-    train_indexes = indexes[: train_size]
-    dev_indexes = indexes[train_size:]
-
-    # 初始化
-    data_set["X_train_set"] = np.zeros(shape=(train_size, 3, H, W), dtype=np.bool_)
-    data_set["X_tag_train_set"] = np.zeros(shape=(dev_size, 3, 3), dtype=np.bool_)
-    data_set["X_dev_set"] = np.zeros(shape=(dev_size, 3, H, W), dtype=np.bool_)
-    data_set["X_tag_dev_set"] = np.zeros(shape=(dev_size, 3, 3), dtype=np.bool_)
-
-    # 更新数值
-    data_set["X_train_set"], data_set["X_tag_train_set"] = data_set["X"][train_indexes], data_set["X_tag"][train_indexes]
-    data_set["X_dev_set"], data_set["X_tag_dev_set"] = data_set["X"][dev_indexes], data_set["X_tag"][dev_indexes]
-
 
 def data_import(amplify=0):
     """ 导入数据集， 分为训练集、开发集
     ``` h5
     {
         "X_train_set": [
-            [A_img, P_img, N_img], # 每个都是 (30, 84)
-            ...
+            [A_img, ...],
+            [P_img, ...],
+            [N_img, ...] # 每个都是 (78, 30, 1)
             ]
         "X_tag_train_set": [
-            [A_tag, P_tag, N_tag], # 每个都是 (3, )
-            ...
+            [A_tag, ...],
+            [P_tag, ...],
+            [N_tag, ...], # 每个都是 (3, )
         ]
         "X_dev_set": (同上)
         "X_tag_dev_set": (同上)
     }
     ```
     """
+    data_set = {}
     if not os.path.exists(H5_PATH):
         print("未发现处理好的数据文件，正在处理...")
-        data_set = get_data_set(amplify)
+        train_img_three_tuples, dev_img_three_tuples = get_img_three_tuples(amplify)
+        data_set = get_data_set(data_set, train_img_three_tuples, type="train")
+        data_set = get_data_set(data_set, dev_img_three_tuples, type="dev")
         h5f = h5py.File(H5_PATH, 'w')
         h5f["X_train_set"] = data_set["X_train_set"]
         h5f["X_tag_train_set"] = data_set["X_tag_train_set"]
@@ -207,10 +198,12 @@ def data_import(amplify=0):
     else:
         print("发现处理好的数据文件，正在读取...")
         h5f = h5py.File(H5_PATH, 'r')
-        data_set = {}
-        data_set["X_train_set"] = h5f["X_train_set"]
-        data_set["X_tag_train_set"] = h5f["X_tag_train_set"]
-        data_set["X_dev_set"] = h5f["X_dev_set"]
-        data_set["X_tag_dev_set"] = h5f["X_tag_dev_set"]
+        data_set["X_train_set"] = h5f["X_train_set"][: ]
+        data_set["X_tag_train_set"] = h5f["X_tag_train_set"][: ]
+        data_set["X_dev_set"] = h5f["X_dev_set"][: ]
+        data_set["X_tag_dev_set"] = h5f["X_tag_dev_set"][: ]
         h5f.close()
+    train_length = len(data_set["X_train_set"][0])
+    dev_length = len(data_set["X_dev_set"][0])
+    print("成功加载训练集 {} 条，开发集 {} 条".format(train_length, dev_length))
     return data_set
