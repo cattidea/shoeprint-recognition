@@ -28,12 +28,12 @@ def get_simple_arrays(amplify):
     rotate, transpose = bool(amplify), bool(amplify)
     simple_arrays = {}
     types = os.listdir(SIMPLE_DIR)
-    for i, tp in enumerate(types):
+    for i, type_num in enumerate(types):
         print("get_simple_arrays {}/{}".format(i, len(types)), end='\r')
-        type_dir = os.path.join(SIMPLE_DIR, tp)
+        type_dir = os.path.join(SIMPLE_DIR, type_num)
         img_path = os.path.join(type_dir, os.listdir(type_dir)[0])
-        simple_arrays[tp] = {}
-        simple_arrays[tp]["imgs"] = image2array(img_path, rotate, transpose)
+        simple_arrays[type_num] = {}
+        simple_arrays[type_num]["imgs"] = image2array(img_path, rotate, transpose)
     return simple_arrays
 
 
@@ -55,17 +55,20 @@ def get_shoeprint_arrays(amplify):
     rotate, transpose = bool(amplify), bool(amplify)
     shoeprint_arrays = {}
     types = os.listdir(SHOEPRINT_DIR)
-    for i, tp in enumerate(types):
+    type_counter = {"train": set(), "dev": set()}
+    for i, type_num in enumerate(types):
         print("get_shoeprint_arrays {}/{}".format(i, len(types)), end='\r')
         set_type = "train" if random.random() < 0.95 else "dev"
-        type_dir = os.path.join(SHOEPRINT_DIR, tp)
+        type_dir = os.path.join(SHOEPRINT_DIR, type_num)
         for filename in os.listdir(type_dir):
             img_path = os.path.join(type_dir, filename)
             shoeprint_arrays[filename] = {}
-            shoeprint_arrays[filename]["type_num"] = tp
+            shoeprint_arrays[filename]["type_num"] = type_num
             shoeprint_arrays[filename]["imgs"] = image2array(
                 img_path, rotate, transpose)
             shoeprint_arrays[filename]["set_type"] = set_type
+            type_counter[set_type].add(type_num)
+    print("训练数据共 {} 类，开发数据共 {} 类".format(len(type_counter["train"]), len(type_counter["dev"])))
     return shoeprint_arrays
 
 
@@ -95,9 +98,9 @@ def get_img_three_tuples(amplify):
     ``` python
     [
         (
-            (A_img, A_tag),
-            (P_img, P_tag),
-            (N_img, N_tag)
+            A_img,
+            P_img,
+            N_img
         ),
         ...
     ]
@@ -145,10 +148,6 @@ def get_data_set(data_set, img_three_tuples, type="train"):
             [P_img, ...],
             [N_img, ...] # 每个都是 (78, 30, 1)
             ]
-        "X_tag": [
-            [A_tag, ...],
-            [P_tag, ...],
-            [N_tag, ...], # 每个都是 (3, )
         ]
     }
     ```
@@ -157,14 +156,12 @@ def get_data_set(data_set, img_three_tuples, type="train"):
     length = len(img_three_tuples)
 
     X = np.zeros(shape=(3, length, H, W, 1), dtype=np.bool_)
-    X_tag = np.zeros(shape=(3, length, 3), dtype=np.bool_)
 
     for i in range(length):
         for j in range(3):
-            X[j][i], X_tag[j][i] = img_three_tuples[i][j]
+            X[j][i] = img_three_tuples[i][j]
 
     data_set["X_" + type + "_set"] = X
-    data_set["X_tag_" + type + "_set"] = X_tag
     return data_set
 
 def data_import(amplify=0):
@@ -176,13 +173,7 @@ def data_import(amplify=0):
             [P_img, ...],
             [N_img, ...] # 每个都是 (78, 30, 1)
             ]
-        "X_tag_train_set": [
-            [A_tag, ...],
-            [P_tag, ...],
-            [N_tag, ...], # 每个都是 (3, )
-        ]
         "X_dev_set": (同上)
-        "X_tag_dev_set": (同上)
     }
     ```
     """
@@ -194,17 +185,13 @@ def data_import(amplify=0):
         data_set = get_data_set(data_set, dev_img_three_tuples, type="dev")
         h5f = h5py.File(H5_PATH, 'w')
         h5f["X_train_set"] = data_set["X_train_set"]
-        h5f["X_tag_train_set"] = data_set["X_tag_train_set"]
         h5f["X_dev_set"] = data_set["X_dev_set"]
-        h5f["X_tag_dev_set"] = data_set["X_tag_dev_set"]
         h5f.close()
     else:
         print("发现处理好的数据文件，正在读取...")
         h5f = h5py.File(H5_PATH, 'r')
         data_set["X_train_set"] = h5f["X_train_set"][: ]
-        data_set["X_tag_train_set"] = h5f["X_tag_train_set"][: ]
         data_set["X_dev_set"] = h5f["X_dev_set"][: ]
-        data_set["X_tag_dev_set"] = h5f["X_tag_dev_set"][: ]
         h5f.close()
     train_length = len(data_set["X_train_set"][0])
     dev_length = len(data_set["X_dev_set"][0])

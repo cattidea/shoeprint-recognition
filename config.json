@@ -2,5 +2,7 @@
   "simple_dir": "data/足迹样本图库/",
   "determine_file": "data/txt/训练.txt",
   "shoeprint_dir": "data/train/train_二值图/",
-  "h5_path": "data/data_set.h5"
+  "h5_path": "data/data_set.h5",
+  "model_dir": "data/ckpt/",
+  "model_path": "data/ckpt/model.ckpt"
 }
