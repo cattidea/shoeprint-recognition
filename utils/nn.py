@@ -54,9 +54,9 @@ def train():
                 N_in: X_train_set[2][: 2000]
                 })
             dev_cost  = sess.run(loss, feed_dict={
-                A_in: X_dev_set[0][: 200],
-                P_in: X_dev_set[1][: 200],
-                N_in: X_dev_set[2][: 200]
+                A_in: X_dev_set[0][: 2000],
+                P_in: X_dev_set[1][: 2000],
+                N_in: X_dev_set[2][: 2000]
                 })
             print("{} train cost is {} , dev cost is {}".format(
                 epoch, sess.run(tf.reduce_mean(train_cost)), sess.run(tf.reduce_mean(dev_cost))))

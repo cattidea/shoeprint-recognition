@@ -38,12 +38,15 @@ def get_simple_arrays(amplify):
 
 
 def get_shoeprint_arrays(amplify):
-    """ 获取鞋印文件结构，将鞋印图片预处理成所需格式
+    """ 获取鞋印文件结构，将鞋印图片预处理成所需格式，并将数据分类为训练类型、开发类型
+    之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
+    所以开发集理应与训练集也在不同的样式中
     ``` json
     {
         "name": {
             "type_num": "xxxxxxxx",
             "imgs": [img1, img2, img3, ...],
+            "set_type": "train/dev"
         },
         ...
     }
@@ -54,6 +57,7 @@ def get_shoeprint_arrays(amplify):
     types = os.listdir(SHOEPRINT_DIR)
     for i, tp in enumerate(types):
         print("get_shoeprint_arrays {}/{}".format(i, len(types)), end='\r')
+        set_type = "train" if random.random() < 0.95 else "dev"
         type_dir = os.path.join(SHOEPRINT_DIR, tp)
         for filename in os.listdir(type_dir):
             img_path = os.path.join(type_dir, filename)
@@ -61,6 +65,7 @@ def get_shoeprint_arrays(amplify):
             shoeprint_arrays[filename]["type_num"] = tp
             shoeprint_arrays[filename]["imgs"] = image2array(
                 img_path, rotate, transpose)
+            shoeprint_arrays[filename]["set_type"] = set_type
     return shoeprint_arrays
 
 
@@ -86,9 +91,7 @@ def get_determine_scope():
 
 
 def get_img_three_tuples(amplify):
-    """ 获取图片三元组， 可对数据进行扩增 amplify 倍 ，并且分成训练三元组和开发三元组、
-    之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
-    所以开发集理应与训练集也在不同的样式中，下面是测试集的格式，开发集相同
+    """ 获取图片三元组， 可对数据进行扩增 amplify 倍 ，并且分成训练三元组和开发三元组
     ``` python
     [
         (
@@ -111,7 +114,7 @@ def get_img_three_tuples(amplify):
         print("get_img_three_tuples {}/{}".format(i, len(determine_scope)), end='\r')
         if img_name in shoeprint_arrays:
             positive_type_num = shoeprint_arrays[img_name]["type_num"]
-            set_type = "train" if random.random() < 0.95 else "dev"
+            set_type = shoeprint_arrays[img_name]["set_type"]
             for negative_type_num in determine_scope[img_name]:
                 if negative_type_num == positive_type_num:
                     continue
