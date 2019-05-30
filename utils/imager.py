@@ -3,7 +3,6 @@ from PIL import Image
 
 W = 30
 H = 78
-GAMMA = 0.05
 
 def image2array(img_path, rotate=False, transpose=False):
     """ 将图像转化为向量，可传入旋转、镜像参数对数据进行扩增"""
