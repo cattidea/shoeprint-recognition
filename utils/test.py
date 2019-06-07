@@ -37,25 +37,40 @@ def test():
     saver = tf.train.import_meta_graph(MODEL_META)
     saver.restore(sess, tf.train.latest_checkpoint(MODEL_DIR))
     graph = tf.get_default_graph()
-    # Placeholder:0 Placeholder_1:0 Placeholder_2:0 Relu_4:0 Relu_9:0 Relu_14:0
-    X = graph.get_tensor_by_name("Placeholder:0")
-    Y = graph.get_tensor_by_name("Relu_4:0")
+
+    A_in = graph.get_tensor_by_name("A_in:0")
+    P_in = graph.get_tensor_by_name("P_in:0")
+    N_in = graph.get_tensor_by_name("N_in:0")
+    A_out = graph.get_tensor_by_name("Relu_5:0")
+    P_out = graph.get_tensor_by_name("Relu_11:0")
+    N_out = graph.get_tensor_by_name("Relu_17:0")
+    is_training = graph.get_tensor_by_name("is_training:0")
+    keep_prob = graph.get_tensor_by_name("keep_prob:0")
+
+    X = A_in
+    Y = A_out
 
     results = []
 
-    origin_encodings = sess.run(Y, feed_dict={X: test_data_set_origin})
+    origin_encodings = sess.run(Y, feed_dict={X: test_data_set_origin, is_training: False, keep_prob: 1})
+    cnt = 0
+    total = 0
     for i in range(imgs_num):
         scope = test_data_set_scope[i]
         label = labels[i]
         origin_encoding = tf.gather(origin_encodings, [i for _ in range(scope_length)])
-        scope_encoding = sess.run(Y, feed_dict={X: scope})
-        # res = dist(scope_encoding, origin_encoding)
-        # print(scope_encoding)
+        scope_encoding = sess.run(Y, feed_dict={X: scope, is_training: False, keep_prob: 1})
         res = tf.reduce_sum(tf.square(tf.subtract(origin_encoding, scope_encoding)), axis=-1)
-        print(sess.run(res))
-        min_index = sess.run(tf.argmin(res))[0][0]
-        print(i, min_index, label[1])
-        print("right" if min_index == label[1] else "wrong")
+        min_index = sess.run(tf.argmin(res))
+
+        if min_index == label[1]:
+            isRight = True
+            cnt += 1
+        else:
+            isRight = False
+        total += 1
+        print("{} y^:{} y:{} res:{} {:.2%}".format(i, min_index, label[1], isRight, cnt/total))
         results.append(res)
-    print(results)
+    print("{:.2%}".format(cnt/total))
+    # print(results)
 

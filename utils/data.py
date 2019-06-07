@@ -196,7 +196,7 @@ def get_data_set(data_set, img_three_tuples, type="train"):
         "X": [
             [A_img, ...],
             [P_img, ...],
-            [N_img, ...] # 每个都是 (78, 30, 1)
+            [N_img, ...] # 每个都是 (H, W, 1)
             ]
         ]
     }
@@ -209,6 +209,7 @@ def get_data_set(data_set, img_three_tuples, type="train"):
 
     for i in range(length):
         for j in range(3):
+            print("get_data_set {}/{}".format(i * 3 + j, length * 3), end='\r')
             X[j][i] = img_three_tuples[i][j]
 
     data_set["X_" + type + "_set"] = X
@@ -221,7 +222,7 @@ def data_import(amplify=0):
         "X_train_set": [
             [A_img, ...],
             [P_img, ...],
-            [N_img, ...] # 每个都是 (78, 30, 1)
+            [N_img, ...] # 每个都是 (H, W, 1)
             ]
         "X_dev_set": (同上)
     }
