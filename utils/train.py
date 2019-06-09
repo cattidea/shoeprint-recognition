@@ -26,15 +26,16 @@ def get_variables():
 def train():
     """ 训练 """
     learning_rate = 0.0001
-    num_epochs = 5
+    num_epochs = 1
     mini_batch_size = 64
     GPU = True
 
     data_set = data_import()
-    X_train_set = data_set["X_train_set"]
-    X_dev_set = data_set["X_dev_set"]
-    train_size = len(X_train_set[0])
-    dev_size = len(X_dev_set[0])
+    X_indices_train_set = data_set["X_indices_train_set"]
+    X_indices_dev_set = data_set["X_indices_dev_set"]
+    X_imgs = data_set["X_imgs"]
+    train_size = len(X_indices_train_set[0])
+    dev_size = len(X_indices_dev_set[0])
 
     (A_in, P_in, N_in), (A_out, P_out, N_out), is_training, keep_prob = get_variables()
     print(A_in.name, A_out.name, is_training.name, keep_prob.name)
@@ -55,35 +56,40 @@ def train():
         sess.run(tf.global_variables_initializer())
         for epoch in range(num_epochs):
             if not mini_batch_size:
-                train_permutation = list(np.random.permutation(train_size // 1000)) # 随机选取 0.1% 训练集数据用来训练
+                train_batch_size = train_size // 2000 # 随机选取 0.05% 训练集数据用来训练
+                train_permutation = list(np.random.permutation(train_batch_size))
                 _, train_cost = sess.run([train_step, loss], feed_dict={
-                    A_in: X_train_set[0][train_permutation],
-                    P_in: X_train_set[1][train_permutation],
-                    N_in: X_train_set[2][train_permutation],
+                    A_in: X_imgs[X_indices_train_set[0][train_permutation]],
+                    P_in: X_imgs[X_indices_train_set[1][train_permutation]],
+                    N_in: X_imgs[X_indices_train_set[2][train_permutation]],
                     is_training: True,
                     keep_prob: 0.5
                     })
+                train_cost /= train_batch_size
             else:
                 train_cost = 0
-                for batch_index, X_mini_batch in enumerate(random_mini_batches(data_set, mini_batch_size=mini_batch_size)):
+                for batch_index, X_indices_mini_batch in enumerate(random_mini_batches(X_indices_train_set, mini_batch_size=mini_batch_size)):
                     _, temp_cost = sess.run([train_step, loss], feed_dict={
-                        A_in: X_mini_batch[0],
-                        P_in: X_mini_batch[1],
-                        N_in: X_mini_batch[2],
+                        A_in: X_imgs[X_indices_mini_batch[0]],
+                        P_in: X_imgs[X_indices_mini_batch[1]],
+                        N_in: X_imgs[X_indices_mini_batch[2]],
                         is_training: True,
                         keep_prob: 0.5
                         })
-                    train_cost += temp_cost / (train_size // mini_batch_size)
-                    print("{} {} train cost is {}".format(
-                        batch_index, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), sess.run(tf.reduce_mean(temp_cost))))
-            dev_permutation = list(np.random.permutation(int(dev_size * 0.02))) # 随机选取 2% 开发集数据用来测试
+                    print("{} mini-batch > {}/{} cost: {}".format(
+                        epoch, batch_index, train_size // mini_batch_size, temp_cost / mini_batch_size), end="\r")
+                    temp_cost /= train_size
+                    train_cost += temp_cost
+            dev_batch_size = dev_size // 100 # 随机选取 1% 训练集数据用来训练
+            dev_permutation = list(np.random.permutation(dev_batch_size))
             dev_cost  = sess.run(loss, feed_dict={
-                A_in: X_dev_set[0][dev_permutation],
-                P_in: X_dev_set[1][dev_permutation],
-                N_in: X_dev_set[2][dev_permutation],
+                A_in: X_imgs[X_indices_dev_set[0][dev_permutation]],
+                P_in: X_imgs[X_indices_dev_set[1][dev_permutation]],
+                N_in: X_imgs[X_indices_dev_set[2][dev_permutation]],
                 is_training: False,
                 keep_prob: 1
                 })
+            dev_cost /= dev_batch_size
             print("{}/{} {} train cost is {} , dev cost is {}".format(
-                epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), sess.run(tf.reduce_mean(train_cost)), sess.run(tf.reduce_mean(dev_cost))))
+                epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost, dev_cost))
         save(sess)
