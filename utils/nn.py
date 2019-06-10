@@ -141,7 +141,7 @@ def model(X, is_training, keep_prob):
     print("A5: {}".format(A5.shape))
 
     # flatten
-    A6 = tf.layers.flatten(A5)
+    A6 = tf.layers.flatten(A4) # 暂时去掉一层
     print("A6: {}".format(A6.shape))
 
     # FC L1

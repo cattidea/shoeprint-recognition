@@ -17,10 +17,37 @@ SHOEPRINT_DIR = CONFIG["shoeprint_dir"]
 SHOEPRINT_DIR_TEST = CONFIG["shoeprint_dir_test"]
 H5_PATH = CONFIG["h5_path"]
 DEBUG_FILE = CONFIG['debug_file']
+DATA_LOADER_DIR = CONFIG["data_loader_dir"]
 SEED = 1111
 random.seed(SEED)
 
 
+def data_loader(name, debug=True):
+    def load_data(func):
+        def inner_load_data(*args, **kw):
+            file_name = name
+            for arg in args:
+                if isinstance(arg, str) and len(arg) <= 5:
+                    file_name += "_" + arg
+            for k in kw:
+                if isinstance(kw[k], str) and len(kw[k]) <= 5:
+                    file_name += "_" + kw[k]
+            file_name += ".dat"
+            file_path = os.path.join(DATA_LOADER_DIR, file_name)
+            if debug and os.path.exists(file_path):
+                with open(file_path, 'rb') as f:
+                    data = pickle.load(f)
+            else:
+                data = func(*args, **kw)
+                if debug:
+                    with open(file_path, 'wb') as f:
+                        pickle.dump(data, f)
+            return data
+        return inner_load_data
+    return load_data
+
+
+@data_loader(name="simple", debug=True)
 def get_simple_arrays(amplify):
     """ 获取样本文件结构，将样本图片预处理成所需格式
     ``` python
@@ -53,6 +80,7 @@ def get_simple_arrays(amplify):
     return simple_arrays, simple_map
 
 
+@data_loader(name="shoeprint", debug=True)
 def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
     """ 获取鞋印文件结，将鞋印图片预处理成所需格式追加在 simple_arrays 后，并将数据分类为训练类型、开发类型
     之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
@@ -111,6 +139,7 @@ def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
     return np.concatenate((simple_arrays, shoeprint_arrays)), shoeprint_map, type_map
 
 
+@data_loader(name="determine", debug=True)
 def get_determine_scope(action_type="train"):
     """ 读取待判定范围文件，并构造成字典型
     ``` python
@@ -133,6 +162,7 @@ def get_determine_scope(action_type="train"):
     return determine_scope
 
 
+@data_loader(name="img_triplets", debug=True)
 def get_img_triplets(amplify):
     """ 获取图片三元组， 可对数据进行扩增 amplify 倍 ，并且分成训练三元组和开发三元组
     ``` python
@@ -161,23 +191,24 @@ def get_img_triplets(amplify):
 
         for img_name in img_names:
             negative_type_ids_block = list(determine_scope[img_name])
-            if img_name in negative_type_ids_block:
-                negative_type_ids_block.pop(negative_type_ids_block.index(img_name))
+            negative_type_ids_block.pop(negative_type_ids_block.index(type_id))
             negative_type_ids.extend(negative_type_ids_block)
         negative_type_ids = list(set(negative_type_ids))
+        assert type_id not in negative_type_ids
 
         positive_indices = []
         negative_indices = []
 
-        positive_indices.extend(simple_map[type_id]["img_indices"] * 5)
+        positive_indices.extend(simple_map[type_id]["img_indices"] * 2)
         for img_name in img_names:
             positive_indices.extend(shoeprint_map[img_name]["img_indices"])
 
         for negative_type_id in negative_type_ids:
-            negative_indices.extend(simple_map[negative_type_id]["img_indices"] * 5)
-            for negative_name in type_map.get(type_id, []):
+            negative_indices.extend(simple_map[negative_type_id]["img_indices"] * 2)
+            for negative_name in type_map.get(negative_type_id, []):
                 negative_indices.extend(shoeprint_map[negative_name]["img_indices"])
 
+        assert not (set(positive_indices) & set(negative_indices))
         img_triplets_block = [
             (*a_p, n)
             for a_p in itertools.combinations(positive_indices, 2)
@@ -199,7 +230,8 @@ def get_img_triplets(amplify):
     return train_img_triplets, dev_img_triplets, img_arrays
 
 
-def get_test_data_set():
+@data_loader(name="test_data_set", debug=True)
+def test_data_import():
     """ 构造测试集数据
     ``` python
     img_arrays
@@ -299,14 +331,3 @@ def data_import(amplify=0):
     dev_length = len(data_set["X_indices_dev_set"][0])
     print("成功加载训练集 {} 条，开发集 {} 条".format(train_length, dev_length))
     return data_set
-
-def test_data_import(debug=False):
-    if debug and os.path.exists(DEBUG_FILE):
-        with open(DEBUG_FILE, 'rb') as f:
-            img_arrays, test_data_map = pickle.load(f)
-    else:
-        img_arrays, test_data_map = get_test_data_set()
-        if debug:
-            with open(DEBUG_FILE, 'wb') as f:
-                pickle.dump((img_arrays, test_data_map), f)
-    return img_arrays, test_data_map

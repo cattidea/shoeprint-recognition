@@ -9,5 +9,6 @@
   "model_meta": "data/ckpt/model.ckpt.meta",
   "model_path": "data/ckpt/model.ckpt",
   "result_file": "data/result.txt",
-  "debug_file": "data/debug.dat"
+  "debug_file": "data/debug.dat",
+  "data_loader_dir": "data/data_loader/"
 }

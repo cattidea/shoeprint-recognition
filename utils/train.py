@@ -26,7 +26,7 @@ def get_variables():
 def train():
     """ 训练 """
     learning_rate = 0.0001
-    num_epochs = 1
+    num_epochs = 2
     mini_batch_size = 64
     GPU = True
 
@@ -56,7 +56,7 @@ def train():
         sess.run(tf.global_variables_initializer())
         for epoch in range(num_epochs):
             if not mini_batch_size:
-                train_batch_size = train_size // 2000 # 随机选取 0.05% 训练集数据用来训练
+                train_batch_size = train_size // 10000 # 随机选取 0.01% 训练集数据用来训练
                 train_permutation = list(np.random.permutation(train_batch_size))
                 _, train_cost = sess.run([train_step, loss], feed_dict={
                     A_in: X_imgs[X_indices_train_set[0][train_permutation]],
@@ -80,7 +80,7 @@ def train():
                         epoch, batch_index, train_size // mini_batch_size, temp_cost / mini_batch_size), end="\r")
                     temp_cost /= train_size
                     train_cost += temp_cost
-            dev_batch_size = dev_size // 100 # 随机选取 1% 训练集数据用来训练
+            dev_batch_size = dev_size // 1000 # 随机选取 0.1% 训练集数据用来训练
             dev_permutation = list(np.random.permutation(dev_batch_size))
             dev_cost  = sess.run(loss, feed_dict={
                 A_in: X_imgs[X_indices_dev_set[0][dev_permutation]],

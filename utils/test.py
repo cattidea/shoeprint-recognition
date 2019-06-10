@@ -6,7 +6,7 @@ from utils.config import Config
 from utils.data import test_data_import
 from utils.nn import model, restore
 
-DEBUG = True
+
 CONFIG = Config()
 RESULT_FILE = CONFIG['result_file']
 DEBUG_FILE = CONFIG['debug_file']
@@ -27,7 +27,7 @@ def get_variables():
 
 def test():
     batch_size = 512
-    img_arrays, test_data_map = test_data_import(DEBUG)
+    img_arrays, test_data_map = test_data_import()
     GPU = True
 
     imgs_num = len(list(test_data_map.keys()))
