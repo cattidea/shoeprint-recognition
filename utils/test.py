@@ -55,13 +55,13 @@ def test():
             P_in = graph.get_tensor_by_name("P_in:0")
             N_in = graph.get_tensor_by_name("N_in:0")
             A_out = graph.get_tensor_by_name("Relu_5:0")
-            P_out = graph.get_tensor_by_name("Relu_13:0")
-            N_out = graph.get_tensor_by_name("Relu_21:0")
+            P_out = graph.get_tensor_by_name("Relu_11:0")
+            N_out = graph.get_tensor_by_name("Relu_17:0")
             is_training = graph.get_tensor_by_name("is_training:0")
             keep_prob = graph.get_tensor_by_name("keep_prob:0")
 
-            X = P_in
-            Y = P_out
+            X = A_in
+            Y = A_out
             encodings = np.zeros((array_num, *Y.shape[1: ]), dtype=np.float32)
 
             for i in range(0, array_num, batch_size):

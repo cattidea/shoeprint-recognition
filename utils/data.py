@@ -23,6 +23,7 @@ random.seed(SEED)
 
 
 def data_loader(name, debug=True):
+    """ 数据装饰器，获取数据前先检查是否有本地 Cache ，若无则重新获取并保存 """
     def load_data(func):
         def inner_load_data(*args, **kw):
             file_name = name
@@ -183,47 +184,69 @@ def get_img_triplets(amplify):
     train_img_triplets = []
     dev_img_triplets = []
 
-    for i, type_id in enumerate(type_map):
-        print("get_img_triplets {}/{} ".format(i, len(type_map)), end='\r')
-        img_names = type_map[type_id]
-        set_type = shoeprint_map[img_names[0]]["set_type"]
-        negative_type_ids = []
+    # for i, type_id in enumerate(type_map):
+    #     print("get_img_triplets {}/{} ".format(i, len(type_map)), end='\r')
+    #     img_names = type_map[type_id]
+    #     set_type = shoeprint_map[img_names[0]]["set_type"]
+    #     negative_type_ids = []
 
-        for img_name in img_names:
-            negative_type_ids_block = list(determine_scope[img_name])
-            negative_type_ids_block.pop(negative_type_ids_block.index(type_id))
-            negative_type_ids.extend(negative_type_ids_block)
-        negative_type_ids = list(set(negative_type_ids))
-        assert type_id not in negative_type_ids
+    #     for img_name in img_names:
+    #         negative_type_ids_block = list(determine_scope[img_name])
+    #         negative_type_ids_block.pop(negative_type_ids_block.index(type_id))
+    #         negative_type_ids.extend(negative_type_ids_block)
+    #     negative_type_ids = list(set(negative_type_ids))
+    #     assert type_id not in negative_type_ids
 
-        positive_indices = []
-        negative_indices = []
+    #     positive_indices = []
+    #     negative_indices = []
 
-        positive_indices.extend(simple_map[type_id]["img_indices"] * 2)
-        for img_name in img_names:
-            positive_indices.extend(shoeprint_map[img_name]["img_indices"])
+    #     positive_indices.extend(simple_map[type_id]["img_indices"] * 2)
+    #     for img_name in img_names:
+    #         positive_indices.extend(shoeprint_map[img_name]["img_indices"])
 
-        for negative_type_id in negative_type_ids:
-            negative_indices.extend(simple_map[negative_type_id]["img_indices"] * 2)
-            for negative_name in type_map.get(negative_type_id, []):
-                negative_indices.extend(shoeprint_map[negative_name]["img_indices"])
+    #     for negative_type_id in negative_type_ids:
+    #         negative_indices.extend(simple_map[negative_type_id]["img_indices"] * 2)
+    #         for negative_name in type_map.get(negative_type_id, []):
+    #             negative_indices.extend(shoeprint_map[negative_name]["img_indices"])
 
-        assert not (set(positive_indices) & set(negative_indices))
-        img_triplets_block = [
-            (*a_p, n)
-            for a_p in itertools.combinations(positive_indices, 2)
-            for n in negative_indices
-        ]
+    #     assert not (set(positive_indices) & set(negative_indices))
+    #     img_triplets_block = [
+    #         (*a_p, n)
+    #         for a_p in itertools.combinations(positive_indices, 2)
+    #         for n in negative_indices
+    #     ]
 
-        if amplify:
-            img_triplets_block = random.sample(img_triplets_block, 1000 * amplify)
-        else:
-            img_triplets_block = random.sample(img_triplets_block, min(len(img_triplets_block), 1000))
+    #     if amplify:
+    #         img_triplets_block = random.sample(img_triplets_block, 1000 * amplify)
+    #     else:
+    #         img_triplets_block = random.sample(img_triplets_block, min(len(img_triplets_block), 1000))
 
-        if set_type == "train":
-            train_img_triplets.extend(img_triplets_block)
-        elif set_type == "dev":
-            dev_img_triplets.extend(img_triplets_block)
+    #     if set_type == "train":
+    #         train_img_triplets.extend(img_triplets_block)
+    #     elif set_type == "dev":
+    #         dev_img_triplets.extend(img_triplets_block)
+
+    for i, img_name in enumerate(determine_scope):
+        print("get_img_triplets {}/{}".format(i, len(determine_scope)), end='\r')
+        if img_name in shoeprint_map:
+            positive_type_id = shoeprint_map[img_name]["type_id"]
+            set_type = shoeprint_map[img_name]["set_type"]
+            for negative_type_id in determine_scope[img_name]:
+                if negative_type_id == positive_type_id:
+                    continue
+
+                img_triplets_block = [(a, p, n) for a in shoeprint_map[img_name]["img_indices"]
+                                                  for p in simple_map[positive_type_id]["img_indices"]
+                                                  for n in simple_map[negative_type_id]["img_indices"]]
+
+                if amplify:
+                    img_triplets_block = random.sample(
+                        img_triplets_block, amplify)
+
+                if set_type == "train":
+                    train_img_triplets.extend(img_triplets_block)
+                elif set_type == "dev":
+                    dev_img_triplets.extend(img_triplets_block)
 
     random.shuffle(train_img_triplets)
     random.shuffle(dev_img_triplets)
@@ -268,6 +291,7 @@ def test_data_import():
     return img_arrays, test_data_map
 
 
+@data_loader(name="data_set", debug=True)
 def get_data_set(data_set, img_triplets, type="train"):
     """ 将三元组数据转化为数据集格式
     ``` h5

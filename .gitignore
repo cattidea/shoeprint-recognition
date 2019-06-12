@@ -128,3 +128,6 @@ dmypy.json
 
 # data
 /data/
+
+# node
+/node_modules/

@@ -5,8 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-W = 80
-H = 208
+# W = 80
+# H = 208
+
+W = 45
+H = 117
 
 def image2array(img_path, rotate=False, transpose=False):
     """ 将图像转化为向量，可传入旋转、镜像参数对数据进行扩增"""

@@ -29,13 +29,15 @@ from utils.imager import plot
 
 # img_arrays, test_data_map = test_data_import()
 
-#for name in test_data_map:
+# for name in test_data_map:
 #    if input(">"):
 #        break
 #    plot(img_arrays[test_data_map[name]["index"]])
- #   plot(img_arrays[test_data_map[name]["scope_indices"][test_data_map[name]["label"]]])
-  #  plot(img_arrays[test_data_map[name]["scope_indices"][0]])
+#    plot(img_arrays[test_data_map[name]["scope_indices"][test_data_map[name]["label"]]])
+#    plot(img_arrays[test_data_map[name]["scope_indices"][0]])
 #    plot(img_arrays[test_data_map[name]["scope_indices"][1]])
+#    plot(img_arrays[test_data_map[name]["scope_indices"][2]])
+#    plot(img_arrays[test_data_map[name]["scope_indices"][3]])
 
 #### train plot
 

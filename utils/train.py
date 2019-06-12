@@ -26,8 +26,8 @@ def get_variables():
 def train():
     """ 训练 """
     learning_rate = 0.0001
-    num_epochs = 2
-    mini_batch_size = 64
+    num_epochs = 1
+    mini_batch_size = 128
     GPU = True
 
     data_set = data_import()
