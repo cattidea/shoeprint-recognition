@@ -16,7 +16,6 @@ DETERMINE_FILE_TEST = CONFIG["determine_file_test"]
 SHOEPRINT_DIR = CONFIG["shoeprint_dir"]
 SHOEPRINT_DIR_TEST = CONFIG["shoeprint_dir_test"]
 H5_PATH = CONFIG["h5_path"]
-DEBUG_FILE = CONFIG['debug_file']
 DATA_LOADER_DIR = CONFIG["data_loader_dir"]
 SEED = 1111
 random.seed(SEED)
@@ -28,10 +27,10 @@ def data_loader(name, debug=True):
         def inner_load_data(*args, **kw):
             file_name = name
             for arg in args:
-                if isinstance(arg, str) and len(arg) <= 5:
+                if isinstance(arg, str) and len(arg) <= 10:
                     file_name += "_" + arg
             for k in kw:
-                if isinstance(kw[k], str) and len(kw[k]) <= 5:
+                if isinstance(kw[k], str) and len(kw[k]) <= 10:
                     file_name += "_" + kw[k]
             file_name += ".dat"
             file_path = os.path.join(DATA_LOADER_DIR, file_name)
@@ -61,7 +60,6 @@ def get_simple_arrays(amplify):
     },
     ```
     """
-    rotate, transpose = bool(amplify), bool(amplify)
     simple_map = {}
     simple_arrays = []
     types = os.listdir(SIMPLE_DIR)
@@ -72,7 +70,7 @@ def get_simple_arrays(amplify):
         img_path = os.path.join(type_dir, os.listdir(type_dir)[0])
         simple_map[type_id] = {}
 
-        img_array = image2array(img_path, rotate, transpose)
+        img_array = image2array(img_path, amplify)
 
         simple_map[type_id]["img_indices"] = [index + j for j in range(len(img_array))]
         index += len(img_array)
@@ -103,7 +101,6 @@ def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
     }
     ```
     """
-    rotate, transpose = bool(amplify), bool(amplify)
     shoeprint_start = len(simple_arrays)
     shoeprint_map = {}
     shoeprint_arrays = []
@@ -122,7 +119,7 @@ def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
         type_map[type_id] = []
         for filename in os.listdir(type_dir):
             img_path = os.path.join(type_dir, filename)
-            img_array = image2array(img_path, rotate, transpose)
+            img_array = image2array(img_path, amplify)
             shoeprint_map[filename] = {}
             shoeprint_map[filename]["type_id"] = type_id
             shoeprint_map[filename]["img_indices"] = [index + j + shoeprint_start for j in range(len(img_array))]
@@ -164,7 +161,7 @@ def get_determine_scope(action_type="train"):
 
 
 @data_loader(name="img_triplets", debug=True)
-def get_img_triplets(amplify):
+def get_img_triplets(determine_scope, simple_map, shoeprint_map, type_map, amplify):
     """ 获取图片三元组， 可对数据进行扩增 amplify 倍 ，并且分成训练三元组和开发三元组
     ``` python
     [
@@ -178,79 +175,91 @@ def get_img_triplets(amplify):
     ```
     """
 
-    determine_scope = get_determine_scope(action_type="train")
-    simple_arrays, simple_map = get_simple_arrays(amplify)
-    img_arrays, shoeprint_map, type_map = get_shoeprint_arrays(simple_arrays, amplify, action_type="train")
     train_img_triplets = []
     dev_img_triplets = []
 
-    # for i, type_id in enumerate(type_map):
-    #     print("get_img_triplets {}/{} ".format(i, len(type_map)), end='\r')
-    #     img_names = type_map[type_id]
-    #     set_type = shoeprint_map[img_names[0]]["set_type"]
-    #     negative_type_ids = []
+    for i, type_id in enumerate(type_map):
+        print("get_img_triplets {}/{} ".format(i, len(type_map)), end='\r')
+        img_names = type_map[type_id]
+        set_type = shoeprint_map[img_names[0]]["set_type"]
+        negative_type_ids = []
 
-    #     for img_name in img_names:
-    #         negative_type_ids_block = list(determine_scope[img_name])
-    #         negative_type_ids_block.pop(negative_type_ids_block.index(type_id))
-    #         negative_type_ids.extend(negative_type_ids_block)
-    #     negative_type_ids = list(set(negative_type_ids))
-    #     assert type_id not in negative_type_ids
+        for img_name in img_names:
+            negative_type_ids_block = list(determine_scope[img_name])
+            negative_type_ids_block.pop(negative_type_ids_block.index(type_id))
+            negative_type_ids.extend(negative_type_ids_block)
+        negative_type_ids = list(set(negative_type_ids))
+        assert type_id not in negative_type_ids
 
-    #     positive_indices = []
-    #     negative_indices = []
+        positive_indices = []
+        negative_indices = []
 
-    #     positive_indices.extend(simple_map[type_id]["img_indices"] * 2)
-    #     for img_name in img_names:
-    #         positive_indices.extend(shoeprint_map[img_name]["img_indices"])
+        positive_indices.extend(simple_map[type_id]["img_indices"] * 2)
+        for img_name in img_names:
+            positive_indices.extend(shoeprint_map[img_name]["img_indices"])
 
-    #     for negative_type_id in negative_type_ids:
-    #         negative_indices.extend(simple_map[negative_type_id]["img_indices"] * 2)
-    #         for negative_name in type_map.get(negative_type_id, []):
-    #             negative_indices.extend(shoeprint_map[negative_name]["img_indices"])
+        for negative_type_id in negative_type_ids:
+            negative_indices.extend(simple_map[negative_type_id]["img_indices"] * 2)
+            for negative_name in type_map.get(negative_type_id, []):
+                negative_indices.extend(shoeprint_map[negative_name]["img_indices"])
 
-    #     assert not (set(positive_indices) & set(negative_indices))
-    #     img_triplets_block = [
-    #         (*a_p, n)
-    #         for a_p in itertools.combinations(positive_indices, 2)
-    #         for n in negative_indices
-    #     ]
+        assert not (set(positive_indices) & set(negative_indices))
+        positive_indices = random.sample(positive_indices, min(len(positive_indices), 30))
+        negative_indices = random.sample(negative_indices, min(len(positive_indices), 30))
 
-    #     if amplify:
-    #         img_triplets_block = random.sample(img_triplets_block, 1000 * amplify)
-    #     else:
-    #         img_triplets_block = random.sample(img_triplets_block, min(len(img_triplets_block), 1000))
+        img_triplets_block = [
+            (*a_p, n)
+            for a_p in itertools.combinations(positive_indices, 2)
+            for n in negative_indices
+        ]
 
-    #     if set_type == "train":
-    #         train_img_triplets.extend(img_triplets_block)
-    #     elif set_type == "dev":
-    #         dev_img_triplets.extend(img_triplets_block)
+        if amplify:
+            img_triplets_block = random.sample(img_triplets_block, min(len(img_triplets_block), 300 * amplify))
+        else:
+            img_triplets_block = random.sample(img_triplets_block, min(len(img_triplets_block), 300))
 
-    for i, img_name in enumerate(determine_scope):
-        print("get_img_triplets {}/{}".format(i, len(determine_scope)), end='\r')
-        if img_name in shoeprint_map:
-            positive_type_id = shoeprint_map[img_name]["type_id"]
-            set_type = shoeprint_map[img_name]["set_type"]
-            for negative_type_id in determine_scope[img_name]:
-                if negative_type_id == positive_type_id:
-                    continue
+        if set_type == "train":
+            train_img_triplets.extend(img_triplets_block)
+        elif set_type == "dev":
+            dev_img_triplets.extend(img_triplets_block)
 
-                img_triplets_block = [(a, p, n) for a in shoeprint_map[img_name]["img_indices"]
-                                                  for p in simple_map[positive_type_id]["img_indices"]
-                                                  for n in simple_map[negative_type_id]["img_indices"]]
+    # for i, img_name in enumerate(determine_scope):
+    #     print("get_img_triplets {}/{}".format(i, len(determine_scope)), end='\r')
+    #     if img_name in shoeprint_map:
+    #         positive_type_id = shoeprint_map[img_name]["type_id"]
+    #         set_type = shoeprint_map[img_name]["set_type"]
+    #         for negative_type_id in determine_scope[img_name]:
+    #             if negative_type_id == positive_type_id:
+    #                 continue
 
-                if amplify:
-                    img_triplets_block = random.sample(
-                        img_triplets_block, amplify)
+    #             img_triplets_block = [(a, p, n) for a in shoeprint_map[img_name]["img_indices"]
+    #                                               for p in simple_map[positive_type_id]["img_indices"]
+    #                                               for n in simple_map[negative_type_id]["img_indices"]]
 
-                if set_type == "train":
-                    train_img_triplets.extend(img_triplets_block)
-                elif set_type == "dev":
-                    dev_img_triplets.extend(img_triplets_block)
+    #             if amplify:
+    #                 img_triplets_block = random.sample(
+    #                     img_triplets_block, amplify)
+
+    #             if set_type == "train":
+    #                 train_img_triplets.extend(img_triplets_block)
+    #             elif set_type == "dev":
+    #                 dev_img_triplets.extend(img_triplets_block)
 
     random.shuffle(train_img_triplets)
     random.shuffle(dev_img_triplets)
-    return train_img_triplets, dev_img_triplets, img_arrays
+    return train_img_triplets, dev_img_triplets
+
+
+@data_loader(name="simple_indices", debug=True)
+def get_simple_indices(simple_map):
+    """ 获取样本列表数据 """
+    simple_indices = []
+
+    for i, type_id in enumerate(simple_map):
+        print("get_simple_indices {}/{} ".format(i, len(simple_map)), end='\r')
+        simple_indices.append(simple_map[type_id]["img_indices"][0])
+
+    return simple_indices
 
 
 @data_loader(name="test_data_set", debug=True)
@@ -312,7 +321,7 @@ def get_data_set(data_set, img_triplets, type="train"):
 
     for i in range(length):
         for j in range(3):
-            print("get_data_set {}/{} ".format(i * 3 + j, length * 3), end='\r')
+            print("get_{}_data_set {}/{} ".format(type, i * 3 + j, length * 3), end='\r')
             X[j][i] = img_triplets[i][j]
 
     data_set["X_indices_" + type + "_set"] = X
@@ -336,12 +345,21 @@ def data_import(amplify=0):
     data_set = {}
     if not os.path.exists(H5_PATH):
         print("未发现处理好的数据文件，正在处理...")
-        train_img_triplets, dev_img_triplets, data_set["X_imgs"] = get_img_triplets(amplify)
+        determine_scope = get_determine_scope(action_type="train")
+        simple_arrays, simple_map = get_simple_arrays(amplify)
+        img_arrays, shoeprint_map, type_map = get_shoeprint_arrays(simple_arrays, amplify, action_type="train")
+        train_img_triplets, dev_img_triplets = get_img_triplets(determine_scope, simple_map, shoeprint_map, type_map, amplify)
+        simple_indices = get_simple_indices(simple_map)
+
+        data_set["X_imgs"] = img_arrays
         data_set = get_data_set(data_set, train_img_triplets, type="train")
         data_set = get_data_set(data_set, dev_img_triplets, type="dev")
+        data_set["X_simple_indices"] = np.array(simple_indices, dtype=np.int32)
+
         h5f = h5py.File(H5_PATH, 'w')
         h5f["X_indices_train_set"] = data_set["X_indices_train_set"]
         h5f["X_indices_dev_set"] = data_set["X_indices_dev_set"]
+        h5f["X_simple_indices"] = data_set["X_simple_indices"]
         h5f["X_imgs"] = data_set["X_imgs"]
         h5f.close()
     else:
@@ -349,6 +367,7 @@ def data_import(amplify=0):
         h5f = h5py.File(H5_PATH, 'r')
         data_set["X_indices_train_set"] = h5f["X_indices_train_set"][: ]
         data_set["X_indices_dev_set"] = h5f["X_indices_dev_set"][: ]
+        data_set["X_simple_indices"] = h5f["X_simple_indices"][: ]
         data_set["X_imgs"] = h5f["X_imgs"][: ]
         h5f.close()
     train_length = len(data_set["X_indices_train_set"][0])

@@ -9,7 +9,6 @@ from utils.nn import model, restore
 
 CONFIG = Config()
 RESULT_FILE = CONFIG['result_file']
-DEBUG_FILE = CONFIG['debug_file']
 MODEL_PATH = CONFIG['model_path']
 MODEL_DIR = CONFIG['model_dir']
 MODEL_META = CONFIG['model_meta']
@@ -54,9 +53,9 @@ def test():
             A_in = graph.get_tensor_by_name("A_in:0")
             P_in = graph.get_tensor_by_name("P_in:0")
             N_in = graph.get_tensor_by_name("N_in:0")
-            A_out = graph.get_tensor_by_name("Relu_5:0")
-            P_out = graph.get_tensor_by_name("Relu_11:0")
-            N_out = graph.get_tensor_by_name("Relu_17:0")
+            A_out = graph.get_tensor_by_name("l2_normalize:0")
+            P_out = graph.get_tensor_by_name("l2_normalize_1:0")
+            N_out = graph.get_tensor_by_name("l2_normalize_2:0")
             is_training = graph.get_tensor_by_name("is_training:0")
             keep_prob = graph.get_tensor_by_name("keep_prob:0")
 

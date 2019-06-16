@@ -1,13 +1,14 @@
 {
-  "name": "notev",
-  "version": "0.0.1-alpha.10",
+  "name": "shoeprint-recognition",
+  "version": "0.0.1-alpha.11",
   "description": "恒锐足迹识别赛",
   "main": "main.py",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "clear:cache": "rm data/data_loader/* & rm data/data_set.h5"
   },
   "keywords": [
     "python",
