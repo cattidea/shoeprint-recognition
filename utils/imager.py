@@ -10,31 +10,83 @@ from PIL import Image
 
 W = 45
 H = 117
+density_noise = 0.01
+num_block = 40
+block_size = (30, 30)
 
-def image2array(img_path, amplify=False):
+def image2array(img_path, amplify=0):
     """ 将图像转化为向量，可传入旋转、镜像参数对数据进行扩增"""
+
     arrays = []
     imgs = []
     origin = Image.open(img_path).convert('1')
 
     if amplify:
-        mirror = origin.transpose(Image.FLIP_LEFT_RIGHT)
-        rotate_origin_01 = origin.rotate(5)
-        rotate_origin_02 = origin.rotate(-5)
-        rotate_mirror_01 = mirror.rotate(5)
-        rotate_mirror_02 = mirror.rotate(-5)
-        imgs.extend([origin, mirror, rotate_origin_01, rotate_origin_02, rotate_mirror_01, rotate_mirror_02])
+        imgs = [origin]
+        imgs = _transpose_amplify(imgs)
+        imgs = _rotate_amplify(imgs, 5, -5)
+        imgs = _noise_amplify(imgs, density_noise=density_noise)
+        imgs = _block_amplify(imgs, num_block=num_block, block_size=block_size)
     else:
         imgs.append(origin)
 
     for img in imgs:
         arr = np.array(img.resize((W, H)), dtype=np.bool_).reshape((H, W, 1))
         arrays.append(arr)
+
+    assert len(arrays) >= amplify
     return arrays
+
+
+def amplify(func):
+    """ 扩增装饰器，在原图片列表的基础上进行扩增 """
+    def new_func(ori_imgs, *args, **kw):
+        imgs = []
+        for img in ori_imgs:
+            imgs.append(img)
+            imgs.extend(func(img, *args, **kw))
+        return imgs
+    return new_func
+
+@amplify
+def _rotate_amplify(img, *angles):
+    """ 旋转扩增，可同时扩增多个角度 """
+    return [img.rotate(angle) for angle in angles]
+
+
+@amplify
+def _transpose_amplify(img):
+    """ 对称扩增 """
+    return [img.transpose(Image.FLIP_LEFT_RIGHT)]
+
+
+@amplify
+def _block_amplify(img, num_block, block_size):
+    """ 随机遮挡扩增 """
+    w, h = img.size
+    block_arr = np.array(img)
+    for _ in range(num_block):
+        x_start = np.random.randint(0, h-block_size[0])
+        y_start = np.random.randint(0, w-block_size[0])
+        block_arr[x_start: x_start+block_size[0], y_start: y_start+block_size[1]] = 0
+    return [Image.fromarray(block_arr, "L")]
+
+
+@amplify
+def _noise_amplify(img, density_noise):
+    """ 椒盐噪声扩增 """
+    w, h = img.size
+    noise_arr = np.array(img)
+    for _ in range(int(density_noise*w*h)):
+        noise_arr[np.random.randint(0, h), np.random.randint(0, w)] = np.random.randint(2)
+    return [Image.fromarray(noise_arr, "L")]
+
 
 def image2array_v2(img_path, amplify=False):
     """ opencv 接口的 image2array ， 注意路径名不能包含中文
-    opencv 有着更高的性能（速度为 PIL 的两倍），但是变换的效果没有 PIL 理想（失真较严重）"""
+    opencv 有着更高的性能（速度为 PIL 的两倍），但是变换的效果没有 PIL 理想（失真较严重）
+    当前已弃用
+    """
 
     arrays = []
     imgs = []

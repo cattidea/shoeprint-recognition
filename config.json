@@ -9,5 +9,6 @@
   "model_meta": "data/ckpt/model.ckpt.meta",
   "model_path": "data/ckpt/model.ckpt",
   "result_file": "data/result.txt",
-  "data_loader_dir": "data/data_loader/"
+  "data_loader_dir": "data/data_loader/",
+  "json_path": "data/indices.json"
 }

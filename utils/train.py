@@ -4,41 +4,60 @@ import numpy as np
 import tensorflow as tf
 
 from utils.config import Config
-from utils.data import data_import
-from utils.nn import model, triplet_loss, nucleus_loss, random_mini_batches, save
-from utils.imager import H as IH, W as IW
+from utils.data import data_import, gen_mini_batch, test_data_import
+from utils.nn import model, triplet_loss, random_mini_batches, save, compute_embeddings
+from utils.imager import H as IH, W as IW, plot
+from utils.test import init_test_graph, data_test
 
-RADIUS = 0.05
-MARGIN = 4 * RADIUS
 
-def get_variables():
+MARGIN = 0.2
+
+
+def init_graph():
     """ 初始化 IO 变量 """
-    A_in = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="A_in")
-    P_in = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="P_in")
-    N_in = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="N_in")
+    A = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="A")
+    P = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="P")
+    N = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="N")
     is_training = tf.placeholder(dtype=tf.bool, name="is_training")
     keep_prob = tf.placeholder(dtype=tf.float32, name="keep_prob")
-    A_out = model(A_in, is_training, keep_prob)
-    P_out = model(P_in, is_training, keep_prob)
-    N_out = model(N_in, is_training, keep_prob)
-    return (A_in, P_in, N_in), (A_out, P_out, N_out), is_training, keep_prob
+    A_emb = model(A, is_training, keep_prob)
+    P_emb = model(P, is_training, keep_prob)
+    N_emb = model(N, is_training, keep_prob)
+    ops = {
+        "A": A,
+        "P": P,
+        "N": N,
+        "A_emb": A_emb,
+        "P_emb": P_emb,
+        "N_emb": N_emb,
+        "is_training": is_training,
+        "keep_prob": keep_prob
+    }
+    return ops
 
 def train():
     """ 训练 """
     learning_rate = 0.0001
-    num_epochs = 8
-    mini_batch_size = 128
-    amplify = 3
+    num_epochs = 5000
     GPU = True
+    class_per_batch = 8
+    shoe_per_class = 8
+    img_per_shoe = 6
+    step = 512 # 计算 embeddings 时所用的步长
+    test_step = 50
 
-    # load data
-    data_set = data_import(amplify=amplify)
-    X_indices_train_set = data_set["X_indices_train_set"]
-    X_indices_dev_set = data_set["X_indices_dev_set"]
-    X_simple_indices = data_set["X_simple_indices"]
+    # train data
+    data_set = data_import(amplify=img_per_shoe)
     X_imgs = data_set["X_imgs"]
-    train_size = len(X_indices_train_set[0])
-    dev_size = len(X_indices_dev_set[0])
+    indices = data_set["indices"]
+    train_size = len(indices)
+
+    # test data
+    train_test_img_arrays, train_test_data_map = test_data_import(set_type="train")
+    dev_test_img_arrays, dev_test_data_map = test_data_import(set_type="dev")
+    train_scope_length = len(train_test_data_map[list(train_test_data_map.keys())[0]]["scope_indices"])
+    dev_scope_length = len(dev_test_data_map[list(dev_test_data_map.keys())[0]]["scope_indices"])
+
 
     # GPU Config
     config = tf.ConfigProto(allow_soft_placement=True)
@@ -49,73 +68,67 @@ def train():
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     # train 计算图
-    (A_in, P_in, N_in), (A_out, P_out, N_out), is_training, keep_prob = get_variables()
-    print(A_in.name, A_out.name, is_training.name, keep_prob.name)
-    print(P_in.name, P_out.name, is_training.name, keep_prob.name)
-    print(N_in.name, N_out.name, is_training.name, keep_prob.name)
-    loss = triplet_loss(A_out, P_out, N_out, MARGIN)
+    ops = init_graph()
+    print(ops["A"].name, ops["A_emb"].name, ops["is_training"].name, ops["keep_prob"].name)
+    print(ops["P"].name, ops["P_emb"].name, ops["is_training"].name, ops["keep_prob"].name)
+    print(ops["N"].name, ops["N_emb"].name, ops["is_training"].name, ops["keep_prob"].name)
+    loss = triplet_loss(ops["A_emb"], ops["P_emb"], ops["N_emb"], MARGIN)
     optimizer = tf.train.AdamOptimizer(learning_rate)
     train_step = optimizer.minimize(loss)
+    embeddings_ops = {
+        "input": ops["A"],
+        "embeddings": ops["A_emb"],
+        "is_training": ops["is_training"],
+        "keep_prob": ops["keep_prob"]
+    }
 
-    # dist-train 计算图
-    dist_loss = nucleus_loss(A_out, P_out, 10*RADIUS)
-    dist_optimizer = tf.train.AdamOptimizer(learning_rate)
-    dist_train_step = dist_optimizer.minimize(dist_loss)
+    # test 计算图
+    train_test_embeddings_shape = (len(train_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
+    dev_test_embeddings_shape = (len(dev_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
+    train_test_ops = init_test_graph(train_scope_length, train_test_embeddings_shape)
+    dev_test_ops = init_test_graph(dev_scope_length, dev_test_embeddings_shape)
 
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
-        for epoch in range(num_epochs):
+        clock = time.time()
+        for epoch in range(1, num_epochs+1):
             # train
-            if not mini_batch_size:
-                train_batch_size = train_size // 10000 # 随机选取 0.01% 训练集数据用来训练
-                train_permutation = list(np.random.permutation(train_batch_size))
-                _, train_cost = sess.run([train_step, loss], feed_dict={
-                    A_in: X_imgs[X_indices_train_set[0][train_permutation]],
-                    P_in: X_imgs[X_indices_train_set[1][train_permutation]],
-                    N_in: X_imgs[X_indices_train_set[2][train_permutation]],
-                    is_training: True,
-                    keep_prob: 0.5
-                    })
-                train_cost /= train_batch_size
-            else:
-                # train
-                train_cost = 0
-                for batch_index, (X_indices_mini_batch, mini_batch_simple_indices) in enumerate(
-                    random_mini_batches(X_indices_train_set, X_simple_indices, mini_batch_size=mini_batch_size)):
-                    # dist-train
-                    if epoch in [0, 2]:
-                        _, temp_dist_cost = sess.run([dist_train_step, dist_loss], feed_dict={
-                            A_in: X_imgs[mini_batch_simple_indices[0]],
-                            P_in: X_imgs[mini_batch_simple_indices[1]],
-                            is_training: True,
-                            keep_prob: 0.5
-                            })
-                    else:
-                        temp_dist_cost = -1
+            train_costs = []
+            for batch_index, triplets in gen_mini_batch(
+                indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
+                img_arrays=X_imgs, sess=sess, ops=embeddings_ops, alpha=MARGIN, step=step):
 
-                    _, temp_cost = sess.run([train_step, loss], feed_dict={
-                        A_in: X_imgs[X_indices_mini_batch[0]],
-                        P_in: X_imgs[X_indices_mini_batch[1]],
-                        N_in: X_imgs[X_indices_mini_batch[2]],
-                        is_training: True,
-                        keep_prob: 0.5
-                        })
-                    print("{} mini-batch > {}/{} cost: {} dist-cost: {}".format(
-                        epoch, batch_index, train_size // mini_batch_size, temp_cost / mini_batch_size, temp_dist_cost / mini_batch_size), end="\r")
-                    temp_cost /= train_size
-                    train_cost += temp_cost
+                triplet_list = [list(line) for line in zip(*triplets)]
+                if not triplet_list:
+                    continue
+                mini_batch_size = len(triplet_list[0])
+
+                _, temp_cost = sess.run([train_step, loss], feed_dict={
+                    ops["A"]: X_imgs[triplet_list[0]],
+                    ops["P"]: X_imgs[triplet_list[1]],
+                    ops["N"]: X_imgs[triplet_list[2]],
+                    ops["is_training"]: True,
+                    ops["keep_prob"]: 0.5
+                    })
+                print("{} mini-batch > {}/{} cost: {} ".format(
+                    epoch, batch_index, train_size, temp_cost / mini_batch_size), end="\r")
+                temp_cost /= mini_batch_size
+                train_costs.append(temp_cost)
+            train_cost = sum(train_costs) / len(train_costs)
 
             # test
-            dev_batch_size = dev_size // 1000 # 随机选取 0.1% 训练集数据用来训练
-            dev_permutation = list(np.random.permutation(dev_batch_size))
-            dev_cost  = sess.run(loss, feed_dict={
-                A_in: X_imgs[X_indices_dev_set[0][dev_permutation]],
-                P_in: X_imgs[X_indices_dev_set[1][dev_permutation]],
-                N_in: X_imgs[X_indices_dev_set[2][dev_permutation]],
-                is_training: False,
-                keep_prob: 1
-                })
-            dev_cost /= dev_batch_size
-            print("{}/{} {} train cost is {} , dev cost is {}".format(
-                epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost, dev_cost))
+            if epoch % test_step == 0:
+                train_test_embeddings = compute_embeddings(train_test_img_arrays, sess=sess, ops=embeddings_ops, step=step)
+                dev_test_embeddings = compute_embeddings(dev_test_img_arrays, sess=sess, ops=embeddings_ops, step=step)
+                _, train_rate = data_test(train_test_data_map, train_test_embeddings, sess, train_test_ops, log=False)
+                _, dev_rate = data_test(dev_test_data_map, dev_test_embeddings, sess, dev_test_ops, log=False)
+
+                prec_time_stamp = (time.time() - clock) * ((num_epochs - epoch) // test_step) + clock
+                clock = time.time()
+                print("{}/{} {} train cost is {} train prec is {:.2%} dev prec is {:.2%} >> {} ".format(
+                    epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost,
+                    train_rate, dev_rate, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp))))
+            else:
+                print("{}/{} {} train cost is {}".format(
+                    epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost))
         save(sess)
