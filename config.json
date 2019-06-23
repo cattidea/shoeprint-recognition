@@ -4,11 +4,11 @@
   "determine_file_test": "data/索引.txt",
   "shoeprint_dir": "data/train/train_2/",
   "shoeprint_dir_test": "data/test/",
-  "h5_path": "data/data_set.h5",
   "model_dir": "data/ckpt/",
   "model_meta": "data/ckpt/model.ckpt.meta",
   "model_path": "data/ckpt/model.ckpt",
   "result_file": "data/result.txt",
-  "data_loader_dir": "data/data_loader/",
-  "json_path": "data/indices.json"
+  "data_loader_dir": "data/cache/data_loader/",
+  "h5_path": "data/cache/data_set.h5",
+  "json_path": "data/cache/indices.json"
 }

@@ -1,10 +1,13 @@
 import os
+import time
 import numpy as np
 import tensorflow as tf
 
 from utils.config import Config
 from utils.data import test_data_import
 from utils.nn import model, restore, compute_embeddings
+from utils.imager import plot
+from utils.graph import get_emb_ops_from_graph, init_test_ops
 
 
 CONFIG = Config()
@@ -12,48 +15,6 @@ RESULT_FILE = CONFIG['result_file']
 MODEL_PATH = CONFIG['model_path']
 MODEL_DIR = CONFIG['model_dir']
 MODEL_META = CONFIG['model_meta']
-
-
-def get_emb_ops(graph):
-    A = graph.get_tensor_by_name("A:0")
-    P = graph.get_tensor_by_name("P:0")
-    N = graph.get_tensor_by_name("N:0")
-    A_emb = graph.get_tensor_by_name("l2_normalize:0")
-    P_emb = graph.get_tensor_by_name("l2_normalize_1:0")
-    N_emb = graph.get_tensor_by_name("l2_normalize_2:0")
-    is_training = graph.get_tensor_by_name("is_training:0")
-    keep_prob = graph.get_tensor_by_name("keep_prob:0")
-    ops = {
-        "A": A,
-        "P": P,
-        "N": N,
-        "A_emb": A_emb,
-        "P_emb": P_emb,
-        "N_emb": N_emb,
-        "is_training": is_training,
-        "keep_prob": keep_prob
-    }
-    return ops
-
-
-def init_test_graph(scope_length, embeddings_shape):
-    """ 初始化测试计算图 """
-    origin_index = tf.placeholder(dtype=tf.int32, shape=(), name="origin_index")
-    scope_indices = tf.placeholder(dtype=tf.int32, shape=(scope_length), name="scope_indices")
-    embeddings_op = tf.placeholder(dtype=tf.float32, shape=embeddings_shape, name="scope_indices")
-
-    origin_embeddings = tf.gather(embeddings_op, [origin_index for _ in range(scope_length)])
-    scope_embeddings = tf.gather(embeddings_op, scope_indices)
-    res_op = tf.reduce_sum(tf.square(tf.subtract(origin_embeddings, scope_embeddings)), axis=-1)
-    min_index_op = tf.argmin(res_op)
-    ops = {
-        "origin_index": origin_index,
-        "scope_indices": scope_indices,
-        "embeddings": embeddings_op,
-        "res": res_op,
-        "min_index": min_index_op
-    }
-    return ops
 
 
 def data_test(test_data_map, embeddings, sess, test_ops, log=False):
@@ -75,6 +36,10 @@ def data_test(test_data_map, embeddings, sess, test_ops, log=False):
         total += 1
         if log:
             print("{:3} y_pred:{:3} y_label:{:3} res:{:2} {:.2%}".format(i, min_index, label, isRight, cnt/total))
+
+        # plot(img_arrays[index])
+        # plot(img_arrays[test_data_map[origin_name]["scope_indices"][label]])
+        # plot(img_arrays[test_data_map[origin_name]["scope_indices"][min_index]])
         results.append(res)
     if log:
         print("{:.2%}".format(cnt/total))
@@ -101,10 +66,10 @@ def test():
     graph = tf.Graph()
     with graph.as_default():
         saver = tf.train.import_meta_graph(MODEL_META)
-        with tf.Session(graph=graph) as sess:
+        with tf.Session(graph=graph, config=config) as sess:
             saver.restore(sess, tf.train.latest_checkpoint(MODEL_DIR))
 
-            ops = get_emb_ops(graph)
+            ops = get_emb_ops_from_graph(graph)
 
             embedding_ops = {
                 "input": ops["A"],
@@ -116,8 +81,10 @@ def test():
 
             # 测试计算图
             embeddings_shape = (len(img_arrays), *embedding_ops["embeddings"].shape[1: ])
-            test_ops = init_test_graph(scope_length, embeddings_shape)
+            test_ops = init_test_ops(scope_length, embeddings_shape)
 
+            clock = time.time()
             res, rate = data_test(test_data_map, embeddings, sess, test_ops, log=True)
+            print("{:.2f}s".format(time.time() - clock))
             # print(results)
 
