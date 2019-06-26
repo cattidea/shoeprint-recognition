@@ -5,13 +5,17 @@ import tensorflow as tf
 
 from utils.config import Config
 from utils.data import data_import, gen_mini_batch, test_data_import
-from utils.nn import model, triplet_loss, random_mini_batches, save, compute_embeddings, MODEL_PATH, MODEL_META, MODEL_DIR
-from utils.imager import H as IH, W as IW, plot
+from utils.nn import compute_embeddings
+from utils.imager import plot
 from utils.test import data_test
 from utils.graph import init_test_ops, init_emb_ops, get_emb_ops_from_graph
 
 
 MARGIN = 0.2
+CONFIG = Config()
+MODEL_PATH = CONFIG['model_path']
+MODEL_DIR = CONFIG['model_dir']
+MODEL_META = CONFIG['model_meta']
 
 
 def train(resume=False):
@@ -19,10 +23,10 @@ def train(resume=False):
     learning_rate = 0.0001
     num_epochs = 5000
     GPU = True
-    class_per_batch = 10
+    class_per_batch = 16
     shoe_per_class = 8
     img_per_shoe = 6
-    step = 512 # 计算 embeddings 时所用的步长
+    emb_step = 1024
     test_step = 50
     max_to_keep = 5
 
@@ -35,8 +39,8 @@ def train(resume=False):
     # test data
     train_test_img_arrays, train_test_data_map = test_data_import(set_type="train")
     dev_test_img_arrays, dev_test_data_map = test_data_import(set_type="dev")
-    train_scope_length = len(train_test_data_map[list(train_test_data_map.keys())[0]]["scope_indices"])
-    dev_scope_length = len(dev_test_data_map[list(dev_test_data_map.keys())[0]]["scope_indices"])
+    train_scope_length = len(train_test_data_map[0]["scope_indices"])
+    dev_scope_length = len(dev_test_data_map[0]["scope_indices"])
 
     # GPU Config
     config = tf.ConfigProto(allow_soft_placement=True)
@@ -48,6 +52,7 @@ def train(resume=False):
 
     graph = tf.Graph()
     with graph.as_default():
+        tf.set_random_seed(-1)
         if resume:
             saver = tf.train.import_meta_graph(MODEL_META)
             ops = get_emb_ops_from_graph(graph)
@@ -85,7 +90,7 @@ def train(resume=False):
                 train_costs = []
                 for batch_index, triplets in gen_mini_batch(
                     indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
-                    img_arrays=X_imgs, sess=sess, ops=embeddings_ops, alpha=MARGIN, step=step):
+                    img_arrays=X_imgs, sess=sess, ops=embeddings_ops, alpha=MARGIN, step=emb_step):
 
                     triplet_list = [list(line) for line in zip(*triplets)]
                     if not triplet_list:
@@ -107,8 +112,8 @@ def train(resume=False):
 
                 # test
                 if epoch % test_step == 0:
-                    train_test_embeddings = compute_embeddings(train_test_img_arrays, sess=sess, ops=embeddings_ops, step=step)
-                    dev_test_embeddings = compute_embeddings(dev_test_img_arrays, sess=sess, ops=embeddings_ops, step=step)
+                    train_test_embeddings = compute_embeddings(train_test_img_arrays, sess=sess, ops=embeddings_ops, step=emb_step)
+                    dev_test_embeddings = compute_embeddings(dev_test_img_arrays, sess=sess, ops=embeddings_ops, step=emb_step)
                     _, train_rate = data_test(train_test_data_map, train_test_embeddings, sess, train_test_ops, log=False)
                     _, dev_rate = data_test(dev_test_data_map, dev_test_embeddings, sess, dev_test_ops, log=False)
 

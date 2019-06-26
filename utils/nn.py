@@ -2,14 +2,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from utils.config import Config
 from utils.imager import H, W
-
-
-CONFIG = Config()
-MODEL_PATH = CONFIG['model_path']
-MODEL_DIR = CONFIG['model_dir']
-MODEL_META = CONFIG['model_meta']
 
 
 def random_mini_batches(data_set, mini_batch_size = 64, seed = 0):
@@ -73,136 +66,6 @@ def maxout(inputs, num_units, axis=None):
     return outputs
 
 
-def model_117_45_base(X, is_training, keep_prob):
-    # 117 * 45
-    A0 = X
-    # A0 = tf.layers.batch_normalization(inputs=A0, training=is_training, name="BN0", reuse=tf.AUTO_REUSE)
-    print("A0: {}".format(A0.shape))
-
-    # CONV L1
-    A1 = tf.layers.conv2d(inputs=A0, filters=16, kernel_size=3, strides=1, padding='same',
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV1", reuse=tf.AUTO_REUSE)
-    # A1 = tf.layers.batch_normalization(inputs=A1, training=is_training, name="BN1", reuse=tf.AUTO_REUSE)
-    A1 = tf.nn.relu(A1)
-    A1 = tf.layers.max_pooling2d(A1, pool_size=3, strides=3)
-    print("A1: {}".format(A1.shape))
-
-    # CONV L2
-    A2 = tf.layers.conv2d(inputs=A1, filters=64, kernel_size=3, strides=1, padding='same',
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV2", reuse=tf.AUTO_REUSE)
-    # A2 = tf.layers.batch_normalization(inputs=A2, training=is_training, name="BN2", reuse=tf.AUTO_REUSE)
-    A2 = tf.nn.relu(A2)
-    A2 = tf.layers.max_pooling2d(A2, pool_size=3, strides=3)
-    print("A2: {}".format(A2.shape))
-
-    # CONV L3
-    A3 = tf.layers.conv2d(inputs=A2, filters=256, kernel_size=3, strides=1, padding='same',
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV3", reuse=tf.AUTO_REUSE)
-    # A3 = tf.layers.batch_normalization(inputs=A3, training=is_training, name="BN3", reuse=tf.AUTO_REUSE)
-    A3 = tf.nn.relu(A3)
-    A3 = tf.layers.max_pooling2d(A3, pool_size=5, strides=4)
-    print("A3: {}".format(A3.shape))
-
-    # flatten
-    A4 = tf.layers.flatten(A3)
-    print("A4: {}".format(A4.shape))
-
-    # FC L1
-    A5 = tf.layers.dense(inputs=A4, units=512, name="FC1", reuse=tf.AUTO_REUSE)
-    # A5 = tf.layers.batch_normalization(inputs=A5, training=is_training, name="BN4", reuse=tf.AUTO_REUSE)
-    if keep_prob != 1:
-        A5 = tf.nn.dropout(A5, keep_prob)
-    A5 = tf.nn.relu(A5)
-    print("A5: {}".format(A5.shape))
-
-    # FC L2
-    A6 = tf.layers.dense(inputs=A5, units=256, name="FC2", reuse=tf.AUTO_REUSE)
-    # A6 = tf.layers.batch_normalization(inputs=A6, training=is_training, name="BN5", reuse=tf.AUTO_REUSE)
-    if keep_prob != 1:
-        A6 = tf.nn.dropout(A6, keep_prob)
-    A6 = tf.nn.relu(A6)
-    print("A6: {}".format(A6.shape))
-
-    # FC L3
-    A7 = tf.layers.dense(inputs=A6, units=128, name="FC3", reuse=tf.AUTO_REUSE)
-    # A7 = tf.layers.batch_normalization(inputs=A7, training=is_training, name="BN6", reuse=tf.AUTO_REUSE)
-    if keep_prob != 1:
-        A7 = tf.nn.dropout(A7, keep_prob)
-    A7 = tf.nn.relu(A7)
-    print("A7: {}".format(A7.shape))
-
-    Y = A7
-    print(Y.shape)
-    Y = tf.nn.l2_normalize(Y, axis=-1)
-
-    return Y
-
-
-def model_117_45_v2(X, is_training, keep_prob):
-    # 117 * 45 v2
-    A0 = X
-    # A0 = tf.layers.batch_normalization(inputs=A0, training=is_training, name="BN0", reuse=tf.AUTO_REUSE)
-    print("A0: {}".format(A0.shape))
-
-    # CONV L1
-    A1 = tf.layers.conv2d(inputs=A0, filters=16, kernel_size=3, strides=1, padding='same',
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV1", reuse=tf.AUTO_REUSE)
-    # A1 = tf.layers.batch_normalization(inputs=A1, training=is_training, name="BN1", reuse=tf.AUTO_REUSE)
-    A1 = tf.nn.relu(A1)
-    A1 = tf.layers.max_pooling2d(A1, pool_size=3, strides=3)
-    print("A1: {}".format(A1.shape))
-
-    # CONV L2
-    A2 = tf.layers.conv2d(inputs=A1, filters=64, kernel_size=3, strides=1, padding='same',
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV2", reuse=tf.AUTO_REUSE)
-    # A2 = tf.layers.batch_normalization(inputs=A2, training=is_training, name="BN2", reuse=tf.AUTO_REUSE)
-    A2 = tf.nn.relu(A2)
-    A2 = tf.layers.max_pooling2d(A2, pool_size=3, strides=3)
-    print("A2: {}".format(A2.shape))
-
-    # CONV L3
-    A3 = tf.layers.conv2d(inputs=A2, filters=256, kernel_size=5, strides=4, padding='valid',
-                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV3", reuse=tf.AUTO_REUSE)
-    # A3 = tf.layers.batch_normalization(inputs=A3, training=is_training, name="BN3", reuse=tf.AUTO_REUSE)
-    A3 = tf.nn.relu(A3)
-    print("A3: {}".format(A3.shape))
-
-    # flatten
-    A4 = tf.layers.flatten(A3)
-    print("A4: {}".format(A4.shape))
-
-    # FC L1
-    A5 = tf.layers.dense(inputs=A4, units=512, name="FC1", reuse=tf.AUTO_REUSE)
-    # A5 = tf.layers.batch_normalization(inputs=A5, training=is_training, name="BN4", reuse=tf.AUTO_REUSE)
-    if keep_prob != 1:
-        A5 = tf.nn.dropout(A5, keep_prob)
-    # A5 = tf.nn.relu(A5)
-    A5 = maxout(A5, num_units=256)
-    print("A5: {}".format(A5.shape))
-
-    # FC L2
-    A6 = tf.layers.dense(inputs=A5, units=256, name="FC2", reuse=tf.AUTO_REUSE)
-    # A6 = tf.layers.batch_normalization(inputs=A6, training=is_training, name="BN5", reuse=tf.AUTO_REUSE)
-    if keep_prob != 1:
-        A6 = tf.nn.dropout(A6, keep_prob)
-    # A6 = tf.nn.relu(A6)
-    A6 = maxout(A6, num_units=128)
-    print("A6: {}".format(A6.shape))
-
-    # FC L3
-    A7 = tf.layers.dense(inputs=A6, units=128, name="FC3", reuse=tf.AUTO_REUSE)
-    # A7 = tf.layers.batch_normalization(inputs=A7, training=is_training, name="BN6", reuse=tf.AUTO_REUSE)
-    if keep_prob != 1:
-        A7 = tf.nn.dropout(A7, keep_prob)
-    A7 = tf.nn.relu(A7)
-    # A7 = maxout(A7, num_units=64)
-    print("A7: {}".format(A7.shape))
-
-    Y = A7
-    Y = tf.nn.l2_normalize(Y, axis=-1)
-    return Y
-
-
 def model_132_48_base(X, is_training, keep_prob):
     A0 = X
     # A0 = tf.layers.batch_normalization(inputs=A0, training=is_training, name="BN0", reuse=tf.AUTO_REUSE)
@@ -264,20 +127,68 @@ def model_132_48_base(X, is_training, keep_prob):
     return Y
 
 
+def model_132_48_v2(X, is_training, keep_prob):
+    A0 = X
+    # A0 = tf.layers.batch_normalization(inputs=A0, training=is_training, name="BN0", reuse=tf.AUTO_REUSE)
+    print("A0: {}".format(A0.shape))
+
+    # CONV L1
+    A1 = tf.layers.conv2d(inputs=A0, filters=16, kernel_size=3, strides=1, padding='same',
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV1", reuse=tf.AUTO_REUSE)
+    # A1 = tf.layers.batch_normalization(inputs=A1, training=is_training, name="BN1", reuse=tf.AUTO_REUSE)
+    A1 = tf.nn.relu(A1)
+    A1 = tf.layers.max_pooling2d(A1, pool_size=3, strides=3)
+    print("A1: {}".format(A1.shape))
+
+    # CONV L2
+    A2 = tf.layers.conv2d(inputs=A1, filters=32, kernel_size=3, strides=1, padding='same',
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV2", reuse=tf.AUTO_REUSE)
+    # A2 = tf.layers.batch_normalization(inputs=A2, training=is_training, name="BN2", reuse=tf.AUTO_REUSE)
+    A2 = tf.nn.relu(A2)
+    A2 = tf.layers.max_pooling2d(A2, pool_size=2, strides=2)
+    print("A2: {}".format(A2.shape))
+
+    # CONV L3
+    A3 = tf.layers.conv2d(inputs=A2, filters=64, kernel_size=3, strides=1, padding='same',
+                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name="CONV3", reuse=tf.AUTO_REUSE)
+    # A3 = tf.layers.batch_normalization(inputs=A3, training=is_training, name="BN3", reuse=tf.AUTO_REUSE)
+    A3 = tf.nn.relu(A3)
+    A3 = tf.layers.max_pooling2d(A3, pool_size=2, strides=2)
+    print("A3: {}".format(A3.shape))
+
+    # flatten
+    A4 = tf.layers.flatten(A3)
+    print("A4: {}".format(A4.shape))
+
+    # FC L1
+    A5 = tf.layers.dense(inputs=A4, units=2048, name="FC1", reuse=tf.AUTO_REUSE)
+    if keep_prob != 1:
+        A5 = tf.nn.dropout(A5, keep_prob)
+    A5 = maxout(A5, num_units=512)
+    print("A5: {}".format(A5.shape))
+
+    # FC L2
+    A6 = tf.layers.dense(inputs=A5, units=512, name="FC2", reuse=tf.AUTO_REUSE)
+    if keep_prob != 1:
+        A6 = tf.nn.dropout(A6, keep_prob)
+    A6 = maxout(A6, num_units=256)
+    print("A6: {}".format(A6.shape))
+
+    # FC L3
+    A7 = tf.layers.dense(inputs=A6, units=256, name="FC3", reuse=tf.AUTO_REUSE)
+    if keep_prob != 1:
+        A7 = tf.nn.dropout(A7, keep_prob)
+    A7 = maxout(A7, num_units=128)
+    print("A7: {}".format(A7.shape))
+
+    Y = A7
+    Y = tf.nn.l2_normalize(Y, axis=-1)
+    print("Y: {}".format(Y.shape))
+
+    return Y
+
+
 def model(X, is_training, keep_prob):
     """ 神经网络模型 """
 
     return model_132_48_base(X, is_training, keep_prob)
-
-
-def save(sess):
-    saver=tf.train.Saver(max_to_keep=5)
-    saver.save(sess, MODEL_PATH)
-
-def restore():
-    sess = tf.InteractiveSession()
-    sess.run(tf.global_variables_initializer())
-    saver = tf.train.import_meta_graph(MODEL_META)
-    saver = tf.train.Saver(max_to_keep=1)
-    saver.restore(sess, tf.train.latest_checkpoint(MODEL_DIR))
-    return sess

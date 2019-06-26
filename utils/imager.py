@@ -71,10 +71,6 @@ def _random_block_amplify(img, num_block, block_size):
     """ 随机遮挡扩增 """
     w, h = img.size
     block_arr = np.array(img)
-    # for _ in range(num_block):
-    #     x_start = np.random.randint(0, h-block_size[0])
-    #     y_start = np.random.randint(0, w-block_size[1])
-    #     block_arr[x_start: x_start+block_size[0], y_start: y_start+block_size[1]] = 0
     thumbnail_mask = np.random.randint(0, num_block, ((h//block_size[0], w//block_size[1]))) > 1
     block_mask = np.array(Image.fromarray(thumbnail_mask, "L").resize((w, h)), dtype=np.bool_)
     block_arr &= block_mask
@@ -97,8 +93,6 @@ def _noise_amplify(img, density_noise):
     """ 椒盐噪声扩增 """
     w, h = img.size
     noise_arr = np.array(img)
-    # for _ in range(int(density_noise*w*h)):
-    #     noise_arr[np.random.randint(0, h), np.random.randint(0, w)] = np.random.randint(2)
     noise_white_mask = np.random.rand(h,w) < density_noise
     noise_black_mask = np.random.rand(h,w) > density_noise
     noise_arr |= noise_white_mask

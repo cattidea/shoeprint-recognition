@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 
-from utils.nn import model, triplet_loss, random_mini_batches, save, compute_embeddings, MODEL_PATH
+from utils.nn import model, triplet_loss
 from utils.imager import H as IH, W as IW, plot
 
 

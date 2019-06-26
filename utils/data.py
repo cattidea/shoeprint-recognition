@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 
 from utils.config import Config
-from utils.imager import H, W, image2array, image2array_v2
+from utils.imager import H, W, image2array
 from utils.nn import compute_embeddings
 
 CONFIG = Config()
@@ -195,6 +195,15 @@ def test_data_import(set_type="test"):
     """ 构造测试数据
     ``` python
     img_arrays
+    [
+        {
+            "name": <name>,
+            "index": <idx>,
+            "scope_indices": [<idx01>, <idx02>, ...],
+            "label": <correct_idx>
+        },
+        ...
+    ]
     {
         <name>: {
             "index": <idx>,
@@ -210,7 +219,7 @@ def test_data_import(set_type="test"):
     determine_scope = get_determine_scope(action_type=action_type)
     simple_arrays, simple_map = get_simple_arrays(amplify)
     img_arrays, shoeprint_map, _ = get_shoeprint_arrays(simple_arrays, amplify, action_type=action_type)
-    test_data_map = {}
+    test_data_map = []
 
     scope_length = len(determine_scope[list(determine_scope.keys())[0]])
     imgs_num = len(determine_scope)
@@ -226,12 +235,15 @@ def test_data_import(set_type="test"):
         if (set_type == shoeprint_map[origin_name]["set_type"]):
             type_id = shoeprint_map[origin_name]["type_id"]
 
-            test_data_map[origin_name] = {}
-            test_data_map[origin_name]["index"] = shoeprint_map[origin_name]["img_indices"][0]
-            test_data_map[origin_name]["scope_indices"] = []
-            test_data_map[origin_name]["label"] = determine_scope[origin_name].index(type_id)
+            item = {}
+
+            item["name"] = origin_name
+            item["index"] = shoeprint_map[origin_name]["img_indices"][0]
+            item["scope_indices"] = []
+            item["label"] = determine_scope[origin_name].index(type_id)
             for j in range(scope_length):
-                test_data_map[origin_name]["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
+                item["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
+            test_data_map.append(item)
     return img_arrays, test_data_map
 
 
