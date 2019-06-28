@@ -22,6 +22,7 @@ JSON_PATH = CONFIG["json_path"]
 DATA_LOADER_DIR = CONFIG["data_loader_dir"]
 SEED = 1111
 random.seed(SEED)
+np.random.seed(SEED)
 
 
 def data_loader(name, debug=True):
@@ -251,7 +252,7 @@ def data_import(amplify=0):
     """ 导入数据集， 分为训练集、开发集
     ``` h5
     {
-        "X_imgs": [<img01>, <img02>, ...] # 每个都是 (H, W, 1)
+        "img_arrays": [<img01>, <img02>, ...] # 每个都是 (H, W, 1)
     }
     ```
     """
@@ -263,11 +264,11 @@ def data_import(amplify=0):
         img_arrays, shoeprint_map, type_map = get_shoeprint_arrays(simple_arrays, amplify, action_type="train")
         indices = get_indices(simple_map, shoeprint_map, type_map)
 
-        data_set["X_imgs"] = img_arrays
+        data_set["img_arrays"] = img_arrays
         data_set["indices"] = indices
 
         h5f = h5py.File(H5_PATH, 'w')
-        h5f["X_imgs"] = data_set["X_imgs"]
+        h5f["img_arrays"] = data_set["img_arrays"]
         h5f.close()
 
         with open(JSON_PATH, 'w', encoding="utf8") as f:
@@ -275,7 +276,7 @@ def data_import(amplify=0):
     else:
         print("发现处理好的数据文件，正在读取...")
         h5f = h5py.File(H5_PATH, 'r')
-        data_set["X_imgs"] = h5f["X_imgs"][: ]
+        data_set["img_arrays"] = h5f["img_arrays"][: ]
         h5f.close()
 
         with open(JSON_PATH, 'r', encoding="utf8") as f:
@@ -364,7 +365,7 @@ def gen_mini_batch(indices, class_per_batch, shoe_per_class, img_per_shoe,
                    img_arrays, sess, ops, alpha=0.2, step=512):
     """ 生成 mini-batch """
     start_index = 0
-    shadow_index =0
+    shadow_index = 0
     while start_index >= shadow_index:
         shadow_index = start_index
         shoeprints, nrof_shoes_per_class, start_index = sample_shoeprint(indices, start_index, class_per_batch, shoe_per_class, img_per_shoe)

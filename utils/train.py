@@ -23,16 +23,16 @@ def train(resume=False):
     learning_rate = 0.0001
     num_epochs = 5000
     GPU = True
-    class_per_batch = 16
+    class_per_batch = 32
     shoe_per_class = 8
     img_per_shoe = 6
     emb_step = 1024
-    test_step = 50
+    test_step = 200
     max_to_keep = 5
 
     # train data
     data_set = data_import(amplify=img_per_shoe)
-    X_imgs = data_set["X_imgs"]
+    img_arrays = data_set["img_arrays"]
     indices = data_set["indices"]
     train_size = len(indices)
 
@@ -90,7 +90,7 @@ def train(resume=False):
                 train_costs = []
                 for batch_index, triplets in gen_mini_batch(
                     indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
-                    img_arrays=X_imgs, sess=sess, ops=embeddings_ops, alpha=MARGIN, step=emb_step):
+                    img_arrays=img_arrays, sess=sess, ops=embeddings_ops, alpha=MARGIN, step=emb_step):
 
                     triplet_list = [list(line) for line in zip(*triplets)]
                     if not triplet_list:
@@ -98,9 +98,9 @@ def train(resume=False):
                     mini_batch_size = len(triplet_list[0])
 
                     _, temp_cost = sess.run([ops["train_step"], ops["loss"]], feed_dict={
-                        ops["A"]: X_imgs[triplet_list[0]],
-                        ops["P"]: X_imgs[triplet_list[1]],
-                        ops["N"]: X_imgs[triplet_list[2]],
+                        ops["A"]: (img_arrays[triplet_list[0]] / 255).astype(np.float32),
+                        ops["P"]: (img_arrays[triplet_list[1]] / 255).astype(np.float32),
+                        ops["N"]: (img_arrays[triplet_list[2]] / 255).astype(np.float32),
                         ops["is_training"]: True,
                         ops["keep_prob"]: 0.5
                         })

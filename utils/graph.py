@@ -71,7 +71,6 @@ def init_test_ops(scope_length, embeddings_shape):
     scope_indices = tf.placeholder(dtype=tf.int32, shape=(scope_length), name="scope_indices")
     embeddings_op = tf.placeholder(dtype=tf.float32, shape=embeddings_shape, name="scope_indices")
 
-    # origin_embeddings = tf.gather(embeddings_op, [origin_index for _ in range(scope_length)])
     origin_embeddings = embeddings_op[origin_index]
     scope_embeddings = tf.gather(embeddings_op, scope_indices)
     res_op = tf.reduce_sum(tf.square(tf.subtract(origin_embeddings, scope_embeddings)), axis=-1)

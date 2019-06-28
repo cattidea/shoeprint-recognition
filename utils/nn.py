@@ -30,7 +30,7 @@ def compute_embeddings(input, sess, ops, step=512):
     for i in range(0, array_length, step):
         input_batch = input[i: i + step]
         embeddings_batch = sess.run(ops["embeddings"], feed_dict={
-            ops["input"]: input_batch,
+            ops["input"]: (input_batch / 255).astype(np.float32),
             ops["is_training"]: False,
             ops["keep_prob"]: 1
             })

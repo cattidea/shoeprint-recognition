@@ -23,6 +23,7 @@
 -  CPU: Intel 4200U
 -  GPU: NVIDIA GTX950M
    -  CUDA: 9.0
+-  Memory: 8GB
 -  Python: 3.6.7
    -  tensorflow-gpu 1.13.1
    -  (详见 `requirements.txt`)

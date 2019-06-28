@@ -65,6 +65,7 @@ def test():
         with tf.Session(graph=graph, config=config) as sess:
             saver.restore(sess, tf.train.latest_checkpoint(MODEL_DIR))
 
+            clock = time.time()
             ops = get_emb_ops_from_graph(graph)
 
             embedding_ops = {
@@ -79,7 +80,6 @@ def test():
             embeddings_shape = (len(img_arrays), *embedding_ops["embeddings"].shape[1: ])
             test_ops = init_test_ops(scope_length, embeddings_shape)
 
-            clock = time.time()
             res, rate = data_test(test_data_map, embeddings, sess, test_ops, log=True)
             print("{:.2f}s".format(time.time() - clock))
 
