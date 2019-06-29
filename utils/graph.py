@@ -65,18 +65,19 @@ def get_emb_ops_from_graph(graph):
     return ops
 
 
-def init_test_ops(scope_length, embeddings_shape):
+def init_test_ops(scope_length, num_amplify, embeddings_shape):
     """ 初始化测试计算图 """
-    origin_index = tf.placeholder(dtype=tf.int32, shape=(), name="origin_index")
-    scope_indices = tf.placeholder(dtype=tf.int32, shape=(scope_length), name="scope_indices")
-    embeddings_op = tf.placeholder(dtype=tf.float32, shape=embeddings_shape, name="scope_indices")
+    origin_indices = tf.placeholder(dtype=tf.int32, shape=(num_amplify, ), name="origin_indices")
+    scope_indices = tf.placeholder(dtype=tf.int32, shape=(scope_length, ), name="scope_indices")
+    embeddings_op = tf.placeholder(dtype=tf.float32, shape=embeddings_shape, name="embeddings")
 
-    origin_embeddings = embeddings_op[origin_index]
+    origin_embeddings = tf.gather(embeddings_op, origin_indices)
     scope_embeddings = tf.gather(embeddings_op, scope_indices)
-    res_op = tf.reduce_sum(tf.square(tf.subtract(origin_embeddings, scope_embeddings)), axis=-1)
+    scope_embeddings = tf.stack([scope_embeddings for _ in range(num_amplify)], axis=1)
+    res_op = tf.reduce_min(tf.reduce_sum(tf.square(tf.subtract(origin_embeddings, scope_embeddings)), axis=-1), axis=-1)
     min_index_op = tf.argmin(res_op)
     ops = {
-        "origin_index": origin_index,
+        "origin_indices": origin_indices,
         "scope_indices": scope_indices,
         "embeddings": embeddings_op,
         "res": res_op,

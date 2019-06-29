@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 
 from utils.config import Config
-from utils.imager import H, W, image2array
+from utils.imager import H, W, image2array, TRANSPOSE
 from utils.nn import compute_embeddings
 
 CONFIG = Config()
@@ -192,7 +192,7 @@ def get_indices(simple_map, shoeprint_map, type_map):
 
 
 @data_loader(name="test_data_set", debug=True)
-def test_data_import(set_type="test"):
+def test_data_import(amplify=0, set_type="test"):
     """ 构造测试数据
     ``` python
     img_arrays
@@ -205,28 +205,20 @@ def test_data_import(set_type="test"):
         },
         ...
     ]
-    {
-        <name>: {
-            "index": <idx>,
-            "scope_indices": [<idx01>, <idx02>, ...],
-            "label": <correct_idx>
-        }
-    }
     ```
     """
 
-    amplify = 0
     action_type = "train" if set_type in ["train", "dev"] else "test"
     determine_scope = get_determine_scope(action_type=action_type)
-    simple_arrays, simple_map = get_simple_arrays(amplify)
-    img_arrays, shoeprint_map, _ = get_shoeprint_arrays(simple_arrays, amplify, action_type=action_type)
+    simple_arrays, simple_map = get_simple_arrays(amplify=0)
+    img_arrays, shoeprint_map, _ = get_shoeprint_arrays(simple_arrays, amplify=amplify, action_type=action_type)
     test_data_map = []
 
     scope_length = len(determine_scope[list(determine_scope.keys())[0]])
     imgs_num = len(determine_scope)
 
     for i, origin_name in enumerate(determine_scope):
-        print("get_test_data {}/{} ".format(i, imgs_num), end='\r')
+        print("get_test_data ({}) {}/{} ".format(set_type, i, imgs_num), end='\r')
         if action_type == "test":
             assert origin_name in shoeprint_map
         else:
@@ -237,9 +229,8 @@ def test_data_import(set_type="test"):
             type_id = shoeprint_map[origin_name]["type_id"]
 
             item = {}
-
             item["name"] = origin_name
-            item["index"] = shoeprint_map[origin_name]["img_indices"][0]
+            item["indices"] = shoeprint_map[origin_name]["img_indices"]
             item["scope_indices"] = []
             item["label"] = determine_scope[origin_name].index(type_id)
             for j in range(scope_length):
@@ -323,6 +314,7 @@ def sample_shoeprint(data_set, start_index, class_per_batch, shoe_per_class, img
 
     assert len(shoeprints) == nrof_shoes
     return np.reshape(shoeprints, (nrof_shoes * img_per_shoe, )), nrof_shoes_per_class, start_index
+
 
 def select_triplets(embeddings, shoeprints, nrof_shoes_per_class, class_per_batch, img_per_shoe, alpha):
     """ 选择三元组 """

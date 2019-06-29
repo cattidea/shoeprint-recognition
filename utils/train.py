@@ -6,7 +6,7 @@ import tensorflow as tf
 from utils.config import Config
 from utils.data import data_import, gen_mini_batch, test_data_import
 from utils.nn import compute_embeddings
-from utils.imager import plot
+from utils.imager import plot, TRANSPOSE
 from utils.test import data_test
 from utils.graph import init_test_ops, init_emb_ops, get_emb_ops_from_graph
 
@@ -27,7 +27,7 @@ def train(resume=False):
     shoe_per_class = 8
     img_per_shoe = 6
     emb_step = 1024
-    test_step = 200
+    test_step = 100
     max_to_keep = 5
 
     # train data
@@ -37,10 +37,12 @@ def train(resume=False):
     train_size = len(indices)
 
     # test data
-    train_test_img_arrays, train_test_data_map = test_data_import(set_type="train")
-    dev_test_img_arrays, dev_test_data_map = test_data_import(set_type="dev")
+    train_test_img_arrays, train_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="train")
+    dev_test_img_arrays, dev_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="dev")
     train_scope_length = len(train_test_data_map[0]["scope_indices"])
+    train_num_amplify = len(train_test_data_map[0]["indices"])
     dev_scope_length = len(dev_test_data_map[0]["scope_indices"])
+    dev_num_amplify = len(dev_test_data_map[0]["indices"])
 
     # GPU Config
     config = tf.ConfigProto(allow_soft_placement=True)
@@ -73,8 +75,8 @@ def train(resume=False):
         # test 计算图
         train_test_embeddings_shape = (len(train_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
         dev_test_embeddings_shape = (len(dev_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
-        train_test_ops = init_test_ops(train_scope_length, train_test_embeddings_shape)
-        dev_test_ops = init_test_ops(dev_scope_length, dev_test_embeddings_shape)
+        train_test_ops = init_test_ops(train_scope_length, train_num_amplify, train_test_embeddings_shape)
+        dev_test_ops = init_test_ops(dev_scope_length, dev_num_amplify, dev_test_embeddings_shape)
 
         with tf.Session(graph=graph, config=config) as sess:
             if resume:
@@ -104,8 +106,8 @@ def train(resume=False):
                         ops["is_training"]: True,
                         ops["keep_prob"]: 0.5
                         })
-                    print("{} mini-batch > {}/{} cost: {} ".format(
-                        epoch, batch_index, train_size, temp_cost / mini_batch_size), end="\r")
+                    print("{} mini-batch > {}/{} size: {} cost: {} ".format(
+                        epoch, batch_index, train_size, mini_batch_size, temp_cost / mini_batch_size), end="\r")
                     temp_cost /= mini_batch_size
                     train_costs.append(temp_cost)
                 train_cost = sum(train_costs) / len(train_costs)

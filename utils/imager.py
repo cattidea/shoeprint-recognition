@@ -10,21 +10,42 @@ W = 48
 H = 132
 
 
+TRANSPOSE = lambda x: _transpose_amplify_cv(x)
+ROTATE = lambda x: _rotate_amplify_cv(x, 10, -10)
+OFFSET = lambda x: _offest_amplify_cv(x, (40, 0), (-40, 0), (0, 40), (0, -40))
+NOISE = lambda x: _noise_amplify(x, density_noise=0.02)
+RANDOM_BLOCK = lambda x: _random_block_amplify(x, num_block=30, block_size=(40, 40))
+AREA_BLOCK = lambda x: _area_block_amplify(x)
+
+
 def image2array(img_path, amplify=0):
-    """ 将图像转化为向量，可扩增 """
+    """ 将图像转化为向量，可扩增
+    amplify: int or list<method or tuple<method>> """
 
     arrays = []
     img_arrs = []
     origin = _read_img_cv(img_path)
 
     if amplify:
-        img_arrs += [origin]
-        img_arrs += _transpose_amplify_cv(img_arrs)
-        img_arrs += _rotate_amplify_cv(img_arrs, 10, -10) + \
-                    _offest_amplify_cv(img_arrs, (40, 0), (-40, 0), (0, 40), (0, -40)) + \
-                    _noise_amplify(img_arrs, density_noise=0.02) + \
-                    _random_block_amplify(img_arrs, num_block=30, block_size=(40, 40)) + \
-                    _area_block_amplify(img_arrs)
+        if isinstance(amplify, int):
+            img_arrs += [origin]
+            img_arrs += _transpose_amplify_cv(img_arrs)
+            img_arrs += _rotate_amplify_cv(img_arrs, 10, -10) + \
+                        _offest_amplify_cv(img_arrs, (40, 0), (-40, 0), (0, 40), (0, -40)) + \
+                        _noise_amplify(img_arrs, density_noise=0.02) + \
+                        _random_block_amplify(img_arrs, num_block=30, block_size=(40, 40)) + \
+                        _area_block_amplify(img_arrs)
+            assert len(img_arrs) >= amplify
+        elif isinstance(amplify, list):
+            img_arrs += [origin]
+            for method in amplify:
+                if isinstance(method, tuple):
+                    img_arrs_tmp = []
+                    for met in method:
+                        img_arrs_tmp += met(img_arrs)
+                    img_arrs += img_arrs_tmp
+                else:
+                    img_arrs += method(img_arrs)
     else:
         img_arrs.append(origin)
 
@@ -32,7 +53,6 @@ def image2array(img_path, amplify=0):
         arr = _resize_cv(img_arr, (W, H)).reshape((H, W, 1))
         arrays.append(arr)
 
-    assert len(arrays) >= amplify
     return arrays
 
 
