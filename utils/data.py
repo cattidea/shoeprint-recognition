@@ -55,7 +55,16 @@ def data_loader(name, debug=True):
 def get_simple_arrays(amplify):
     """ 获取样本文件结构，将样本图片预处理成所需格式
     ``` python
-    simple_arrays
+    [
+        [<img1_array1>, <img1_array2>, ...],
+        [<img2_array1>, <img2_array2>, ...],
+        ...
+    ],
+    [
+        [<img1_mask1>, <img1_mask2>, ...],
+        [<img2_mask1>, <img2_mask2>, ...],
+        ...
+    ],
     {
         <type_id>: {
             "img_indices": [<img1_index>, <img2_index>, <img3_index>, ...],
@@ -66,6 +75,7 @@ def get_simple_arrays(amplify):
     """
     simple_map = {}
     simple_arrays = []
+    simple_masks = []
     types = os.listdir(SIMPLE_DIR)
     index = 0
     for i, type_id in enumerate(types):
@@ -74,22 +84,32 @@ def get_simple_arrays(amplify):
         img_path = os.path.join(type_dir, os.listdir(type_dir)[0])
         simple_map[type_id] = {}
 
-        img_array = image2array(img_path, amplify)
+        img_array, masks = image2array(img_path, amplify)
 
         simple_map[type_id]["img_indices"] = [index + j for j in range(len(img_array))]
         index += len(img_array)
         simple_arrays.extend(img_array)
+        simple_masks.extend(masks)
     assert len(simple_arrays) == index
-    return simple_arrays, simple_map
+    return simple_arrays, simple_masks, simple_map
 
 
 @data_loader(name="shoeprint", debug=True)
-def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
+def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
     """ 获取鞋印文件结，将鞋印图片预处理成所需格式追加在 simple_arrays 后，并将数据分类为训练类型、开发类型
     之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
     所以开发集理应与训练集也在不同的样式中
     ``` python
-    shoeprint_arrays
+    [
+        [<img1_array1>, <img1_array2>, ...],
+        [<img2_array1>, <img2_array2>, ...],
+        ...
+    ],
+    [
+        [<img1_mask1>, <img1_mask2>, ...],
+        [<img2_mask1>, <img2_mask2>, ...],
+        ...
+    ],
     {
         <name>: {
             "type_id": <xxxxxxxx>,
@@ -105,13 +125,13 @@ def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
     }
     ```
     """
-    shoeprint_start = len(simple_arrays)
     shoeprint_map = {}
     shoeprint_arrays = []
+    shoeprint_masks = []
     type_map = {}
     types = os.listdir(SHOEPRINT_DIR) if action_type == "train" else os.listdir(SHOEPRINT_DIR_TEST)
     type_counter = {"train": set(), "dev": set(), "test": set()}
-    index = 0
+    index = simple_length
 
     for i, type_id in enumerate(types):
         print("get_shoeprint_arrays {}/{} ".format(i, len(types)), end='\r')
@@ -123,12 +143,13 @@ def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
         type_map[type_id] = []
         for filename in os.listdir(type_dir):
             img_path = os.path.join(type_dir, filename)
-            img_array = image2array(img_path, amplify)
+            img_array, masks = image2array(img_path, amplify)
             shoeprint_map[filename] = {}
             shoeprint_map[filename]["type_id"] = type_id
-            shoeprint_map[filename]["img_indices"] = [index + j + shoeprint_start for j in range(len(img_array))]
+            shoeprint_map[filename]["img_indices"] = [index + j for j in range(len(img_array))]
             shoeprint_map[filename]["set_type"] = set_type
             shoeprint_arrays.extend(img_array)
+            shoeprint_masks.extend(masks)
             index += len(img_array)
 
             type_counter[set_type].add(type_id)
@@ -137,8 +158,8 @@ def get_shoeprint_arrays(simple_arrays, amplify, action_type="train"):
         print("训练数据共 {} 类，开发数据共 {} 类".format(len(type_counter["train"]), len(type_counter["dev"])))
     else:
         print("测试数据共 {} 类".format(len(type_counter["test"])))
-    assert len(shoeprint_arrays) == index
-    return np.concatenate((simple_arrays, shoeprint_arrays)), shoeprint_map, type_map
+    assert len(shoeprint_arrays) == index - simple_length
+    return shoeprint_arrays, shoeprint_masks, shoeprint_map, type_map
 
 
 @data_loader(name="determine", debug=True)
@@ -210,8 +231,11 @@ def test_data_import(amplify=0, set_type="test"):
 
     action_type = "train" if set_type in ["train", "dev"] else "test"
     determine_scope = get_determine_scope(action_type=action_type)
-    simple_arrays, simple_map = get_simple_arrays(amplify=0)
-    img_arrays, shoeprint_map, _ = get_shoeprint_arrays(simple_arrays, amplify=amplify, action_type=action_type)
+    simple_arrays, simple_masks, simple_map = get_simple_arrays(amplify=0)
+    shoeprint_arrays, shoeprint_masks, shoeprint_map, _ = get_shoeprint_arrays(
+        amplify=amplify, simple_length=len(simple_arrays), action_type=action_type)
+    img_arrays = np.concatenate((simple_arrays, shoeprint_arrays))
+    masks = np.concatenate((simple_masks, shoeprint_masks))
     test_data_map = []
 
     scope_length = len(determine_scope[list(determine_scope.keys())[0]])
@@ -236,7 +260,7 @@ def test_data_import(amplify=0, set_type="test"):
             for j in range(scope_length):
                 item["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
             test_data_map.append(item)
-    return img_arrays, test_data_map
+    return img_arrays, masks, test_data_map
 
 
 def data_import(amplify=0):
@@ -251,15 +275,20 @@ def data_import(amplify=0):
     if not os.path.exists(H5_PATH) or not os.path.exists(JSON_PATH):
         print("未发现处理好的数据文件，正在处理...")
         determine_scope = get_determine_scope(action_type="train")
-        simple_arrays, simple_map = get_simple_arrays(amplify)
-        img_arrays, shoeprint_map, type_map = get_shoeprint_arrays(simple_arrays, amplify, action_type="train")
+        simple_arrays, simple_masks, simple_map = get_simple_arrays(amplify)
+        shoeprint_arrays, shoeprint_masks, shoeprint_map, type_map = get_shoeprint_arrays(
+            amplify, simple_length=len(simple_arrays), action_type="train")
+        img_arrays = np.concatenate((simple_arrays, shoeprint_arrays))
+        masks = np.concatenate((simple_masks, shoeprint_masks))
         indices = get_indices(simple_map, shoeprint_map, type_map)
 
         data_set["img_arrays"] = img_arrays
+        data_set["masks"] = masks
         data_set["indices"] = indices
 
         h5f = h5py.File(H5_PATH, 'w')
         h5f["img_arrays"] = data_set["img_arrays"]
+        h5f["masks"] = data_set["masks"]
         h5f.close()
 
         with open(JSON_PATH, 'w', encoding="utf8") as f:
@@ -268,6 +297,7 @@ def data_import(amplify=0):
         print("发现处理好的数据文件，正在读取...")
         h5f = h5py.File(H5_PATH, 'r')
         data_set["img_arrays"] = h5f["img_arrays"][: ]
+        data_set["masks"] = h5f["masks"][: ]
         h5f.close()
 
         with open(JSON_PATH, 'r', encoding="utf8") as f:
@@ -354,13 +384,13 @@ def select_triplets(embeddings, shoeprints, nrof_shoes_per_class, class_per_batc
 
 
 def gen_mini_batch(indices, class_per_batch, shoe_per_class, img_per_shoe,
-                   img_arrays, sess, ops, alpha=0.2, step=512):
+                   img_arrays, masks, sess, ops, alpha=0.2, step=512):
     """ 生成 mini-batch """
     start_index = 0
     shadow_index = 0
     while start_index >= shadow_index:
         shadow_index = start_index
         shoeprints, nrof_shoes_per_class, start_index = sample_shoeprint(indices, start_index, class_per_batch, shoe_per_class, img_per_shoe)
-        embeddings = compute_embeddings(img_arrays[shoeprints], sess, ops, step=step)
+        embeddings = compute_embeddings(img_arrays[shoeprints], masks[shoeprints], sess, ops, step=step)
         triplets = select_triplets(embeddings, shoeprints, nrof_shoes_per_class, class_per_batch, img_per_shoe, alpha)
         yield shadow_index, triplets

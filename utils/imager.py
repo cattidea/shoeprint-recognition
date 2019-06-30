@@ -8,6 +8,9 @@ from PIL import Image, ImageChops
 
 W = 48
 H = 132
+k_W = 6
+k_H = 6
+GAMMA = 63
 
 
 TRANSPOSE = lambda x: _transpose_amplify_cv(x)
@@ -23,6 +26,7 @@ def image2array(img_path, amplify=0):
     amplify: int or list<method or tuple<method>> """
 
     arrays = []
+    masks = []
     img_arrs = []
     origin = _read_img_cv(img_path)
 
@@ -53,7 +57,15 @@ def image2array(img_path, amplify=0):
         arr = _resize_cv(img_arr, (W, H)).reshape((H, W, 1))
         arrays.append(arr)
 
-    return arrays
+    for array in arrays:
+        mask_gray = _resize_cv(array, (W // k_W, H // k_H), interpolation=cv2.INTER_NEAREST)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        mask_gray = cv2.morphologyEx(mask_gray, cv2.MORPH_CLOSE, kernel)
+        mask = mask_gray > GAMMA
+        mask = mask.reshape((H // k_H, W // k_W, 1))
+        masks.append(mask)
+
+    return arrays, masks
 
 
 def _read_img(img_path):
@@ -71,9 +83,9 @@ def _resize(img_arr, shape):
     return np.array(Image.fromarray(img_arr, "L").resize(shape), dtype=np.uint8)
 
 
-def _resize_cv(img_arr, shape):
+def _resize_cv(img_arr, shape, interpolation=cv2.INTER_LINEAR):
     """ 图片矩阵改变大小 opencv 版 """
-    return cv2.resize(img_arr, shape)
+    return cv2.resize(img_arr, shape, interpolation=cv2.INTER_LINEAR)
 
 
 def amplify(func):
@@ -205,6 +217,6 @@ def conv2(img, kernel):
     return res
 
 
-def plot(img_array):
-    plt.imshow(np.reshape(img_array, (H, W)), cmap='gray')
+def plot(img_array, shape=(H, W)):
+    plt.imshow(np.reshape(img_array, shape), cmap='gray')
     plt.show()

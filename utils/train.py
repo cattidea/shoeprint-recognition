@@ -23,26 +23,32 @@ def train(resume=False):
     learning_rate = 0.0001
     num_epochs = 5000
     GPU = True
-    class_per_batch = 32
+    class_per_batch = 8
     shoe_per_class = 8
     img_per_shoe = 6
     emb_step = 1024
-    test_step = 100
+    test_step = 50
     max_to_keep = 5
+    train_test = False
+    dev_test = True
 
     # train data
     data_set = data_import(amplify=img_per_shoe)
     img_arrays = data_set["img_arrays"]
     indices = data_set["indices"]
+    masks = data_set["masks"]
     train_size = len(indices)
 
     # test data
-    train_test_img_arrays, train_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="train")
-    dev_test_img_arrays, dev_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="dev")
-    train_scope_length = len(train_test_data_map[0]["scope_indices"])
-    train_num_amplify = len(train_test_data_map[0]["indices"])
-    dev_scope_length = len(dev_test_data_map[0]["scope_indices"])
-    dev_num_amplify = len(dev_test_data_map[0]["indices"])
+    if train_test:
+        train_test_img_arrays, train_test_masks, train_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="train")
+        train_scope_length = len(train_test_data_map[0]["scope_indices"])
+        train_num_amplify = len(train_test_data_map[0]["indices"])
+
+    if dev_test:
+        dev_test_img_arrays, dev_test_masks, dev_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="dev")
+        dev_scope_length = len(dev_test_data_map[0]["scope_indices"])
+        dev_num_amplify = len(dev_test_data_map[0]["indices"])
 
     # GPU Config
     config = tf.ConfigProto(allow_soft_placement=True)
@@ -67,16 +73,19 @@ def train(resume=False):
 
         embeddings_ops = {
             "input": ops["A"],
+            "masks": ops["A_masks"],
             "embeddings": ops["A_emb"],
             "is_training": ops["is_training"],
             "keep_prob": ops["keep_prob"]
         }
 
         # test 计算图
-        train_test_embeddings_shape = (len(train_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
-        dev_test_embeddings_shape = (len(dev_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
-        train_test_ops = init_test_ops(train_scope_length, train_num_amplify, train_test_embeddings_shape)
-        dev_test_ops = init_test_ops(dev_scope_length, dev_num_amplify, dev_test_embeddings_shape)
+        if train_test:
+            train_test_embeddings_shape = (len(train_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
+            train_test_ops = init_test_ops(train_scope_length, train_num_amplify, train_test_embeddings_shape)
+        if dev_test:
+            dev_test_embeddings_shape = (len(dev_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
+            dev_test_ops = init_test_ops(dev_scope_length, dev_num_amplify, dev_test_embeddings_shape)
 
         with tf.Session(graph=graph, config=config) as sess:
             if resume:
@@ -92,7 +101,7 @@ def train(resume=False):
                 train_costs = []
                 for batch_index, triplets in gen_mini_batch(
                     indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
-                    img_arrays=img_arrays, sess=sess, ops=embeddings_ops, alpha=MARGIN, step=emb_step):
+                    img_arrays=img_arrays, masks=masks, sess=sess, ops=embeddings_ops, alpha=MARGIN, step=emb_step):
 
                     triplet_list = [list(line) for line in zip(*triplets)]
                     if not triplet_list:
@@ -103,6 +112,9 @@ def train(resume=False):
                         ops["A"]: (img_arrays[triplet_list[0]] / 255).astype(np.float32),
                         ops["P"]: (img_arrays[triplet_list[1]] / 255).astype(np.float32),
                         ops["N"]: (img_arrays[triplet_list[2]] / 255).astype(np.float32),
+                        ops["A_masks"]: masks[triplet_list[0]].astype(np.float32),
+                        ops["P_masks"]: masks[triplet_list[1]].astype(np.float32),
+                        ops["N_masks"]: masks[triplet_list[2]].astype(np.float32),
                         ops["is_training"]: True,
                         ops["keep_prob"]: 0.5
                         })
@@ -113,18 +125,21 @@ def train(resume=False):
                 train_cost = sum(train_costs) / len(train_costs)
 
                 # test
+                log_str = "{}/{} {} train cost is {}".format(
+                    epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost)
                 if epoch % test_step == 0:
-                    train_test_embeddings = compute_embeddings(train_test_img_arrays, sess=sess, ops=embeddings_ops, step=emb_step)
-                    dev_test_embeddings = compute_embeddings(dev_test_img_arrays, sess=sess, ops=embeddings_ops, step=emb_step)
-                    _, train_rate = data_test(train_test_data_map, train_test_embeddings, sess, train_test_ops, log=False)
-                    _, dev_rate = data_test(dev_test_data_map, dev_test_embeddings, sess, dev_test_ops, log=False)
+                    if train_test:
+                        train_test_embeddings = compute_embeddings(train_test_img_arrays, train_test_masks, sess=sess, ops=embeddings_ops, step=emb_step)
+                        _, train_rate = data_test(train_test_data_map, train_test_embeddings, sess, train_test_ops, log=False)
+                        log_str += " train prec is {:.2%}" .format(train_rate)
+                    if dev_test:
+                        dev_test_embeddings = compute_embeddings(dev_test_img_arrays, dev_test_masks, sess=sess, ops=embeddings_ops, step=emb_step)
+                        _, dev_rate = data_test(dev_test_data_map, dev_test_embeddings, sess, dev_test_ops, log=False)
+                        log_str += " dev prec is {:.2%}" .format(dev_rate)
 
                     prec_time_stamp = (time.time() - clock) * ((num_epochs - epoch) // test_step) + clock
                     clock = time.time()
-                    print("{}/{} {} train cost is {} train prec is {:.2%} dev prec is {:.2%} >> {} ".format(
-                        epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost,
-                        train_rate, dev_rate, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp))))
+                    log_str += " >> {} ".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp)))
+
                     saver.save(sess, MODEL_PATH)
-                else:
-                    print("{}/{} {} train cost is {}".format(
-                        epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost))
+                print(log_str)

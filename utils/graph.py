@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 from utils.nn import model, triplet_loss
-from utils.imager import H as IH, W as IW, plot
+from utils.imager import H as IH, W as IW, k_H, k_W, plot
 
 
 MARGIN = 0.2
@@ -14,11 +14,14 @@ def init_emb_ops(learning_rate=0.0001):
     A = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="A")
     P = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="P")
     N = tf.placeholder(dtype=tf.float32, shape=[None, IH, IW, 1], name="N")
+    A_masks = tf.placeholder(dtype=tf.float32, shape=[None, IH//k_H, IW//k_W, 1], name="A_masks")
+    P_masks = tf.placeholder(dtype=tf.float32, shape=[None, IH//k_H, IW//k_W, 1], name="P_masks")
+    N_masks = tf.placeholder(dtype=tf.float32, shape=[None, IH//k_H, IW//k_W, 1], name="N_masks")
     is_training = tf.placeholder(dtype=tf.bool, name="is_training")
     keep_prob = tf.placeholder(dtype=tf.float32, name="keep_prob")
-    A_emb = model(A, is_training, keep_prob)
-    P_emb = model(P, is_training, keep_prob)
-    N_emb = model(N, is_training, keep_prob)
+    A_emb = model(A, A_masks, is_training, keep_prob)
+    P_emb = model(P, P_masks, is_training, keep_prob)
+    N_emb = model(N, N_masks, is_training, keep_prob)
     loss = triplet_loss(A_emb, P_emb, N_emb, MARGIN)
     optimizer = tf.train.AdamOptimizer(learning_rate)
     train_step = optimizer.minimize(loss)
@@ -27,6 +30,9 @@ def init_emb_ops(learning_rate=0.0001):
         "A": A,
         "P": P,
         "N": N,
+        "A_masks": A_masks,
+        "P_masks": P_masks,
+        "N_masks": N_masks,
         "A_emb": A_emb,
         "P_emb": P_emb,
         "N_emb": N_emb,
@@ -43,6 +49,9 @@ def get_emb_ops_from_graph(graph):
     A = graph.get_tensor_by_name("A:0")
     P = graph.get_tensor_by_name("P:0")
     N = graph.get_tensor_by_name("N:0")
+    A_masks = graph.get_tensor_by_name("A_masks:0")
+    P_masks = graph.get_tensor_by_name("P_masks:0")
+    N_masks = graph.get_tensor_by_name("N_masks:0")
     A_emb = graph.get_tensor_by_name("l2_normalize:0")
     P_emb = graph.get_tensor_by_name("l2_normalize_1:0")
     N_emb = graph.get_tensor_by_name("l2_normalize_2:0")
@@ -54,6 +63,9 @@ def get_emb_ops_from_graph(graph):
         "A": A,
         "P": P,
         "N": N,
+        "A_masks": A_masks,
+        "P_masks": P_masks,
+        "N_masks": N_masks,
         "A_emb": A_emb,
         "P_emb": P_emb,
         "N_emb": N_emb,

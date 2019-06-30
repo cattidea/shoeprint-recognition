@@ -53,7 +53,7 @@ def data_test(test_data_map, embeddings, sess, test_ops, log=False):
 
 def test():
     emb_step = 512
-    img_arrays, test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="test")
+    img_arrays, masks, test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="test")
     GLOBAL["img_arrays"] = img_arrays
     GPU = False
 
@@ -79,11 +79,12 @@ def test():
 
             embedding_ops = {
                 "input": ops["A"],
+                "masks": ops["A_masks"],
                 "embeddings": ops["A_emb"],
                 "is_training": ops["is_training"],
                 "keep_prob": ops["keep_prob"]
             }
-            embeddings = compute_embeddings(img_arrays, sess=sess, ops=embedding_ops, step=emb_step)
+            embeddings = compute_embeddings(img_arrays, masks, sess=sess, ops=embedding_ops, step=emb_step)
 
             # 测试计算图
             embeddings_shape = (len(img_arrays), *embedding_ops["embeddings"].shape[1: ])

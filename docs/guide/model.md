@@ -66,3 +66,4 @@ loss 采用 $Triplet Loss$ $\href{#references}{^{[5]}}$ ，也即 $L(A, P, N) = 
 6. [triplet-loss-mnist](https://github.com/SpikeKing/triplet-loss-mnist)
 7. [How to use maxout activation function in tensorflow?](https://stackoverflow.com/questions/39954793/how-to-use-maxout-activation-function-in-tensorflow)
 8. [FaceNet（一）---Triplet Loss](https://blog.csdn.net/baidu_27643275/article/details/79222206)
+9. 卜凡杰. 鞋印图像特征提取及检索方法研究
