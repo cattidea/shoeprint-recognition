@@ -4,14 +4,13 @@ import numpy as np
 import tensorflow as tf
 
 from utils.config import Config
-from utils.data import data_import, gen_mini_batch, test_data_import
+from utils.data import data_import, gen_mini_batch, test_data_import, SEED
 from utils.nn import compute_embeddings
-from utils.imager import plot, TRANSPOSE
+from utils.imager import plot, TRANSPOSE, ALL
 from utils.test import data_test
-from utils.graph import init_test_ops, init_emb_ops, get_emb_ops_from_graph
+from utils.graph import init_test_ops, init_emb_ops, get_emb_ops_from_graph, MARGIN
 
 
-MARGIN = 0.2
 CONFIG = Config()
 MODEL_PATH = CONFIG['model_path']
 MODEL_DIR = CONFIG['model_dir']
@@ -23,44 +22,43 @@ def train(resume=False):
     learning_rate = 0.0001
     num_epochs = 5000
     GPU = True
-    class_per_batch = 8
+    keep_prob = 0.5
+    class_per_batch = 4
     shoe_per_class = 8
     img_per_shoe = 6
-    emb_step = 1024
+    emb_step = 512
+    save_step = 10
     test_step = 50
     max_to_keep = 5
-    train_test = False
+    train_test = True
     dev_test = True
 
     # train data
-    data_set = data_import(amplify=img_per_shoe)
+    data_set = data_import(amplify=ALL)
     img_arrays = data_set["img_arrays"]
     indices = data_set["indices"]
     masks = data_set["masks"]
     train_size = len(indices)
 
     # test data
-    if train_test:
-        train_test_img_arrays, train_test_masks, train_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="train")
-        train_scope_length = len(train_test_data_map[0]["scope_indices"])
-        train_num_amplify = len(train_test_data_map[0]["indices"])
-
-    if dev_test:
-        dev_test_img_arrays, dev_test_masks, dev_test_data_map = test_data_import(amplify=[TRANSPOSE], set_type="dev")
-        dev_scope_length = len(dev_test_data_map[0]["scope_indices"])
-        dev_num_amplify = len(dev_test_data_map[0]["indices"])
+    if train_test or dev_test:
+        test_img_arrays, test_masks, test_data_map = test_data_import(amplify=[TRANSPOSE], action_type="train")
+        train_scope_length = len(test_data_map["train"][0]["scope_indices"])
+        train_num_amplify = len(test_data_map["train"][0]["indices"])
+        dev_scope_length = len(test_data_map["dev"][0]["scope_indices"])
+        dev_num_amplify = len(test_data_map["dev"][0]["indices"])
 
     # GPU Config
-    config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.ConfigProto()
     if GPU:
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
+        config.gpu_options.per_process_gpu_memory_fraction = 0.5
         config.gpu_options.allow_growth = True
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     graph = tf.Graph()
     with graph.as_default():
-        tf.set_random_seed(-1)
+        tf.set_random_seed(SEED)
         if resume:
             saver = tf.train.import_meta_graph(MODEL_META)
             ops = get_emb_ops_from_graph(graph)
@@ -80,12 +78,12 @@ def train(resume=False):
         }
 
         # test 计算图
+        if train_test or dev_test:
+            test_embeddings_shape = (len(test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
         if train_test:
-            train_test_embeddings_shape = (len(train_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
-            train_test_ops = init_test_ops(train_scope_length, train_num_amplify, train_test_embeddings_shape)
+            train_test_ops = init_test_ops(train_scope_length, train_num_amplify, test_embeddings_shape)
         if dev_test:
-            dev_test_embeddings_shape = (len(dev_test_img_arrays), *embeddings_ops["embeddings"].shape[1: ])
-            dev_test_ops = init_test_ops(dev_scope_length, dev_num_amplify, dev_test_embeddings_shape)
+            dev_test_ops = init_test_ops(dev_scope_length, dev_num_amplify, test_embeddings_shape)
 
         with tf.Session(graph=graph, config=config) as sess:
             if resume:
@@ -109,14 +107,14 @@ def train(resume=False):
                     mini_batch_size = len(triplet_list[0])
 
                     _, temp_cost = sess.run([ops["train_step"], ops["loss"]], feed_dict={
-                        ops["A"]: (img_arrays[triplet_list[0]] / 255).astype(np.float32),
-                        ops["P"]: (img_arrays[triplet_list[1]] / 255).astype(np.float32),
-                        ops["N"]: (img_arrays[triplet_list[2]] / 255).astype(np.float32),
+                        ops["A"]: np.divide(img_arrays[triplet_list[0]], 255, dtype=np.float32),
+                        ops["P"]: np.divide(img_arrays[triplet_list[1]], 255, dtype=np.float32),
+                        ops["N"]: np.divide(img_arrays[triplet_list[2]], 255, dtype=np.float32),
                         ops["A_masks"]: masks[triplet_list[0]].astype(np.float32),
                         ops["P_masks"]: masks[triplet_list[1]].astype(np.float32),
                         ops["N_masks"]: masks[triplet_list[2]].astype(np.float32),
                         ops["is_training"]: True,
-                        ops["keep_prob"]: 0.5
+                        ops["keep_prob"]: keep_prob
                         })
                     print("{} mini-batch > {}/{} size: {} cost: {} ".format(
                         epoch, batch_index, train_size, mini_batch_size, temp_cost / mini_batch_size), end="\r")
@@ -127,19 +125,22 @@ def train(resume=False):
                 # test
                 log_str = "{}/{} {} train cost is {}".format(
                     epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost)
+
                 if epoch % test_step == 0:
+                    if train_test or dev_test:
+                        test_embeddings = compute_embeddings(test_img_arrays, test_masks, sess=sess, ops=embeddings_ops, step=emb_step)
                     if train_test:
-                        train_test_embeddings = compute_embeddings(train_test_img_arrays, train_test_masks, sess=sess, ops=embeddings_ops, step=emb_step)
-                        _, train_rate = data_test(train_test_data_map, train_test_embeddings, sess, train_test_ops, log=False)
+                        _, train_rate = data_test(test_data_map, "train", test_embeddings, sess, train_test_ops, log=False)
                         log_str += " train prec is {:.2%}" .format(train_rate)
                     if dev_test:
-                        dev_test_embeddings = compute_embeddings(dev_test_img_arrays, dev_test_masks, sess=sess, ops=embeddings_ops, step=emb_step)
-                        _, dev_rate = data_test(dev_test_data_map, dev_test_embeddings, sess, dev_test_ops, log=False)
+                        _, dev_rate = data_test(test_data_map, "dev", test_embeddings, sess, dev_test_ops, log=False)
                         log_str += " dev prec is {:.2%}" .format(dev_rate)
 
                     prec_time_stamp = (time.time() - clock) * ((num_epochs - epoch) // test_step) + clock
                     clock = time.time()
                     log_str += " >> {} ".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp)))
 
+                if epoch % save_step == 0:
                     saver.save(sess, MODEL_PATH)
+
                 print(log_str)

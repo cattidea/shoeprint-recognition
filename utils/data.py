@@ -213,57 +213,62 @@ def get_indices(simple_map, shoeprint_map, type_map):
 
 
 @data_loader(name="test_data_set", debug=True)
-def test_data_import(amplify=0, set_type="test"):
+def test_data_import(amplify=[], action_type="test"):
     """ 构造测试数据
     ``` python
     img_arrays
-    [
-        {
-            "name": <name>,
-            "index": <idx>,
-            "scope_indices": [<idx01>, <idx02>, ...],
-            "label": <correct_idx>
-        },
-        ...
-    ]
+    {
+        "train": [
+            {
+                "name": <name>,
+                "index": <idx>,
+                "scope_indices": [<idx01>, <idx02>, ...],
+                "label": <correct_idx>
+            },
+            ...
+        ],
+        "dev": ...,
+        "test": ...
+    }
     ```
     """
 
-    action_type = "train" if set_type in ["train", "dev"] else "test"
     determine_scope = get_determine_scope(action_type=action_type)
-    simple_arrays, simple_masks, simple_map = get_simple_arrays(amplify=0)
+    simple_arrays, simple_masks, simple_map = get_simple_arrays(amplify=[])
     shoeprint_arrays, shoeprint_masks, shoeprint_map, _ = get_shoeprint_arrays(
         amplify=amplify, simple_length=len(simple_arrays), action_type=action_type)
     img_arrays = np.concatenate((simple_arrays, shoeprint_arrays))
     masks = np.concatenate((simple_masks, shoeprint_masks))
-    test_data_map = []
+    test_data_map = {"train": [], "dev": [], "test": []}
+
+    print("simple {} shoeprint {} ".format(len(simple_arrays), len(shoeprint_arrays)))
 
     scope_length = len(determine_scope[list(determine_scope.keys())[0]])
     imgs_num = len(determine_scope)
 
     for i, origin_name in enumerate(determine_scope):
-        print("get_test_data ({}) {}/{} ".format(set_type, i, imgs_num), end='\r')
+        print("get_test_data ({}) {}/{} ".format(action_type, i, imgs_num), end='\r')
         if action_type == "test":
             assert origin_name in shoeprint_map
         else:
             if origin_name not in shoeprint_map:
                 print(origin_name)
                 continue
-        if (set_type == shoeprint_map[origin_name]["set_type"]):
-            type_id = shoeprint_map[origin_name]["type_id"]
 
-            item = {}
-            item["name"] = origin_name
-            item["indices"] = shoeprint_map[origin_name]["img_indices"]
-            item["scope_indices"] = []
-            item["label"] = determine_scope[origin_name].index(type_id)
-            for j in range(scope_length):
-                item["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
-            test_data_map.append(item)
+        set_type = shoeprint_map[origin_name]["set_type"]
+        type_id = shoeprint_map[origin_name]["type_id"]
+        item = {}
+        item["name"] = origin_name
+        item["indices"] = shoeprint_map[origin_name]["img_indices"]
+        item["scope_indices"] = []
+        item["label"] = determine_scope[origin_name].index(type_id)
+        for j in range(scope_length):
+            item["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
+        test_data_map[set_type].append(item)
     return img_arrays, masks, test_data_map
 
 
-def data_import(amplify=0):
+def data_import(amplify=[]):
     """ 导入数据集， 分为训练集、开发集
     ``` h5
     {
@@ -329,7 +334,8 @@ def sample_shoeprint(data_set, start_index, class_per_batch, shoe_per_class, img
         class_index = class_indices[start_index]
         # 某一类中鞋印的总数量
         nrof_shoes_in_class = len(data_set[class_index])
-        if nrof_shoes_in_class > 1:
+        # if nrof_shoes_in_class > 1:
+        if True:
             shoe_indices = np.arange(nrof_shoes_in_class)
             np.random.shuffle(shoe_indices)
             # 该类中需要抽取鞋印的数量
@@ -339,6 +345,7 @@ def sample_shoeprint(data_set, start_index, class_per_batch, shoe_per_class, img
             img_indices = np.random.choice(img_per_shoe_origin, img_per_shoe, replace=False)
             shoeprints += [np.array(data_set[class_index][i])[img_indices] for i in idx]
             nrof_shoes_per_class.append(nrof_shoes_from_class)
+
         start_index += 1
         start_index %= nrof_classes
 
@@ -351,9 +358,11 @@ def select_triplets(embeddings, shoeprints, nrof_shoes_per_class, class_per_batc
     emb_start_idx = 0
     triplets = []
 
-    for i in range(class_per_batch):
+    for i in range(len(nrof_shoes_per_class)):
         # print("select_triplets {}/{} ".format(i, class_per_batch), end='\r')
         nrof_shoes = int(nrof_shoes_per_class[i])
+        if nrof_shoes <= 1:
+            continue
 
         # 某个鞋
         for j in range(0, nrof_shoes*img_per_shoe, img_per_shoe):
@@ -367,7 +376,7 @@ def select_triplets(embeddings, shoeprints, nrof_shoes_per_class, class_per_batc
                 p_offset = np.random.randint(img_per_shoe)
                 p_idx = emb_start_idx + k + p_offset
                 pos_dist_sqr = np.sum(np.square(embeddings[a_idx] - embeddings[p_idx]))
-                # 这里有个 warning 没解决 暂时不清楚原因
+                # 由于 neg_dist 中有 NaN ，故会有 RuntimeWarning
                 all_neg = np.where(neg_dists_sqr-pos_dist_sqr < alpha)[0]
                 nrof_random_negs = all_neg.shape[0]
 

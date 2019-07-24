@@ -19,39 +19,28 @@ OFFSET = lambda x: _offest_amplify_cv(x, (40, 0), (-40, 0), (0, 40), (0, -40))
 NOISE = lambda x: _noise_amplify(x, density_noise=0.02)
 RANDOM_BLOCK = lambda x: _random_block_amplify(x, num_block=30, block_size=(40, 40))
 AREA_BLOCK = lambda x: _area_block_amplify(x)
+DEFORMATION = lambda x: _deformation_amplify(x, k=500, kernel_size=(225, 225), sigma=15)
+ALL = [TRANSPOSE, (ROTATE, OFFSET, NOISE, RANDOM_BLOCK, AREA_BLOCK, DEFORMATION)]
 
 
-def image2array(img_path, amplify=0):
+def image2array(img_path, amplify=ALL):
     """ 将图像转化为向量，可扩增
-    amplify: int or list<method or tuple<method>> """
+    amplify: list<method or tuple<method>> """
 
     arrays = []
     masks = []
-    img_arrs = []
     origin = _read_img_cv(img_path)
+    img_arrs = [origin]
 
     if amplify:
-        if isinstance(amplify, int):
-            img_arrs += [origin]
-            img_arrs += _transpose_amplify_cv(img_arrs)
-            img_arrs += _rotate_amplify_cv(img_arrs, 10, -10) + \
-                        _offest_amplify_cv(img_arrs, (40, 0), (-40, 0), (0, 40), (0, -40)) + \
-                        _noise_amplify(img_arrs, density_noise=0.02) + \
-                        _random_block_amplify(img_arrs, num_block=30, block_size=(40, 40)) + \
-                        _area_block_amplify(img_arrs)
-            assert len(img_arrs) >= amplify
-        elif isinstance(amplify, list):
-            img_arrs += [origin]
-            for method in amplify:
-                if isinstance(method, tuple):
-                    img_arrs_tmp = []
-                    for met in method:
-                        img_arrs_tmp += met(img_arrs)
-                    img_arrs += img_arrs_tmp
-                else:
-                    img_arrs += method(img_arrs)
-    else:
-        img_arrs.append(origin)
+        for mets in amplify:
+            if isinstance(mets, tuple):
+                img_arrs_tmp = []
+                for method in mets:
+                    img_arrs_tmp += method(img_arrs)
+                img_arrs += img_arrs_tmp
+            else:
+                img_arrs += mets(img_arrs)
 
     for img_arr in img_arrs:
         arr = _resize_cv(img_arr, (W, H)).reshape((H, W, 1))
@@ -59,8 +48,9 @@ def image2array(img_path, amplify=0):
 
     for array in arrays:
         mask_gray = _resize_cv(array, (W // k_W, H // k_H), interpolation=cv2.INTER_NEAREST)
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-        mask_gray = cv2.morphologyEx(mask_gray, cv2.MORPH_CLOSE, kernel)
+        # 使用膨胀运算保证含有图像的区域均被标记
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        mask_gray = cv2.dilate(mask_gray, kernel)
         mask = mask_gray > GAMMA
         mask = mask.reshape((H // k_H, W // k_W, 1))
         masks.append(mask)
@@ -177,15 +167,13 @@ def _area_block_amplify(img_arr):
 
 
 @amplify
-def _deformation_amplify(img_arr, kernel_size=(3, 3)):
-    """ 弹性形变扩增
-    有问题，且太慢，暂不启用 """
+def _deformation_amplify(img_arr, k=500, kernel_size=(225, 225), sigma=15):
+    """ 弹性形变扩增 """
     h, w = img_arr.shape
-    kernel = np.random.normal(0, 0, kernel_size)
-    matrix_h = np.random.randint(10, size=(h, w))
-    matrix_v = np.random.randint(10, size=(h, w))
-    matrix_h = conv2(matrix_h, kernel)
-    matrix_v = conv2(matrix_v, kernel)
+    matrix_h = np.random.uniform(low=-1.0*k, high=1.0*k, size=(h, w))
+    matrix_v = np.random.uniform(low=-1.0*k, high=1.0*k, size=(h, w))
+    matrix_h = cv2.GaussianBlur(matrix_h, kernel_size, sigma).astype(np.int32)
+    matrix_v = cv2.GaussianBlur(matrix_v, kernel_size, sigma).astype(np.int32)
     defor_arr = np.zeros((h, w), dtype=np.uint8)
     for i in range(h):
         for j in range(w):
@@ -193,6 +181,28 @@ def _deformation_amplify(img_arr, kernel_size=(3, 3)):
             new_j = j + int(matrix_h[i][j])
             if new_i in range(h) and new_j in range(w):
                 defor_arr[new_i][new_j] = img_arr[i][j]
+    return [defor_arr]
+
+
+@amplify
+def _deformation_amplify_v2(img_arr, k=500, kernel_size=(225, 225), sigma=15):
+    """ 弹性形变扩增 v2 ，暂不可用 """
+    h, w = img_arr.shape
+    matrix_h = np.random.uniform(low=-1.0*k, high=1.0*k, size=(h, w))
+    matrix_v = np.random.uniform(low=-1.0*k, high=1.0*k, size=(h, w))
+    matrix_h = cv2.GaussianBlur(matrix_h, kernel_size, sigma).astype(np.int32)
+    matrix_v = cv2.GaussianBlur(matrix_v, kernel_size, sigma).astype(np.int32)
+    matrix_x = np.concatenate([np.arange(0, h).reshape((h, 1)) for _ in range(w)], axis=1)
+    matrix_y = np.concatenate([np.arange(0, w).reshape((1, w)) for _ in range(h)], axis=0)
+    matrix_x += matrix_v
+    matrix_y += matrix_h
+    matrix_x = np.where(matrix_x > 0, matrix_x, 0)
+    matrix_x = np.where(matrix_x < h, matrix_x, h)
+    matrix_y = np.where(matrix_y > 0, matrix_y, 0)
+    matrix_y = np.where(matrix_y < w, matrix_y, w)
+    img_triplet = np.stack([matrix_x, matrix_y, img_arr], axis=-1).reshape((w*h, 3))
+    img_triplet = np.array(sorted(img_triplet, key=lambda t: t[0]*10000+t[1]))
+    defor_arr = img_triplet.reshape((h, w, 3))[:, :, 2].astype(np.uint8)
     return [defor_arr]
 
 

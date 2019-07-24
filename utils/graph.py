@@ -6,7 +6,7 @@ from utils.nn import model, triplet_loss
 from utils.imager import H as IH, W as IW, k_H, k_W, plot
 
 
-MARGIN = 0.2
+MARGIN = 0.1
 
 
 def init_emb_ops(learning_rate=0.0001):
@@ -24,7 +24,9 @@ def init_emb_ops(learning_rate=0.0001):
     N_emb = model(N, N_masks, is_training, keep_prob)
     loss = triplet_loss(A_emb, P_emb, N_emb, MARGIN)
     optimizer = tf.train.AdamOptimizer(learning_rate)
-    train_step = optimizer.minimize(loss)
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+        train_step = optimizer.minimize(loss)
     tf.add_to_collection("train", train_step)
     ops = {
         "A": A,
