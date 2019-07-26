@@ -1,7 +1,9 @@
 import argparse
 
-from utils.train import train
-from utils.test import test
+# from utils.train import train
+# from utils.test import test
+
+from trainer.train import train
 
 
 if __name__ == "__main__":
