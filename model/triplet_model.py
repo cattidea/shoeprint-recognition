@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
+from config_parser.config import IH, IW, MARGIN, PATHS, k_H, k_W
 from model.base import ModelBase
-from config_parser.config import MARGIN, IH, IW, k_H, k_W, PATHS
 
 
 class TripletModel(ModelBase):
@@ -10,6 +10,11 @@ class TripletModel(ModelBase):
         super().__init__(config)
         self.ops = {}
         self.test_ops = {}
+        self.debug_op = None
+
+
+    def model(self, X, mask, is_training, keep_prob):
+        raise NotImplementedError
 
 
     def init_ops(self):
@@ -107,9 +112,9 @@ class TripletModel(ModelBase):
         """ 计算嵌入 """
         step = self.config["emb_step"]
         ops = {
-            "input": self.ops["A"],
-            "masks": self.ops["A_masks"],
-            "embeddings": self.ops["A_emb"],
+            "input": self.ops["N"],
+            "masks": self.ops["N_masks"],
+            "embeddings": self.ops["N_emb"],
             "is_training": self.ops["is_training"],
             "keep_prob": self.ops["keep_prob"]
         }
@@ -118,7 +123,7 @@ class TripletModel(ModelBase):
         embeddings = np.zeros((array_length, *ops["embeddings"].shape[1: ]), dtype=np.float32)
 
         for i in range(0, array_length, step):
-            if array_length > 4 * step:
+            if array_length > 10 * step:
                 print("compute embeddings {}/{} ".format(i, array_length), end="\r")
             input_batch = input[i: i + step]
             masks_batch = masks[i: i + step]
@@ -162,19 +167,34 @@ class TripletModel(ModelBase):
         return outputs
 
 
+    def maxout_activation(self, num_units):
+        return lambda x: self.maxout(x, num_units=num_units)
+
+
     @staticmethod
-    def conv2d(X, scope, filter, kernel_size=3, strides=1, padding="same", activation=None, is_training=False):
+    def conv2d(X, scope, filter, kernel_size=3, strides=1, padding="same", activation=None, batch_norm=False, is_training=False):
         """ 卷积，带 BN 层 """
         X = tf.layers.conv2d(inputs=X, filters=filter, kernel_size=kernel_size, strides=strides, padding=padding,
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name=scope+"_CONV", reuse=tf.AUTO_REUSE)
-        X = tf.layers.batch_normalization(inputs=X, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
+        if batch_norm:
+            X = tf.layers.batch_normalization(inputs=X, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
         if activation:
             X = activation(X)
         return X
 
 
     @staticmethod
-    def inception_v2(input, filters, scope, activation=None, is_training=False):
+    def dense(X, name, units, activation=None, keep_prob=1):
+        X = tf.layers.dense(inputs=X, units=units, name=name, reuse=tf.AUTO_REUSE)
+        if keep_prob != 1:
+            X = tf.nn.dropout(X, keep_prob)
+        if activation:
+            X = activation(X)
+        return X
+
+
+    @staticmethod
+    def inception_v2(input, filters, scope, batch_norm=False, activation=None, is_training=False):
         """ inception_v2 网络
         ref: https://blog.csdn.net/loveliuzz/article/details/79135583
         """
@@ -196,7 +216,8 @@ class TripletModel(ModelBase):
         res_pool = tf.layers.conv2d(inputs=res_pool_t, filters=4*k, kernel_size=1, strides=1, padding='same',
                                 kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name=scope+"_pool", reuse=tf.AUTO_REUSE)
         res = tf.concat([res_1_1, res_3_3, res_5_5, res_pool], axis=-1)
-        res = tf.layers.batch_normalization(inputs=res, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
+        if batch_norm:
+            res = tf.layers.batch_normalization(inputs=res, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
         if activation:
             res = activation(res)
         return res

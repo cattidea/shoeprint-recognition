@@ -15,13 +15,6 @@ class BatchAll():
         self.img_arrays = img_arrays
         self.masks = masks
         self.sess = sess
-        self.ops = {
-            "input": model.ops["A"],
-            "masks": model.ops["A_masks"],
-            "embeddings": model.ops["A_emb"],
-            "is_training": model.ops["is_training"],
-            "keep_prob": model.ops["keep_prob"]
-        }
         self.alpha = MARGIN
         self.start_index = 0
         self.shadow_index = 0
@@ -64,8 +57,8 @@ class BatchAll():
             class_index = class_indices[start_index]
             # 某一类中鞋印的总数量
             nrof_shoes_in_class = len(data_set[class_index])
-            # if nrof_shoes_in_class > 1:
-            if True:
+            if nrof_shoes_in_class > 1:
+            # if True:
                 shoe_indices = np.arange(nrof_shoes_in_class)
                 np.random.shuffle(shoe_indices)
                 # 该类中需要抽取鞋印的数量
@@ -98,7 +91,7 @@ class BatchAll():
             for j in range(0, nrof_shoes*img_per_shoe, img_per_shoe):
                 a_offset = np.random.randint(img_per_shoe) # 同图偏移
                 a_idx = emb_start_idx + j + a_offset
-                neg_dists_sqr = np.sum(np.square(embeddings[a_idx] - embeddings), axis=1)
+                neg_dists_sqr = np.sum(np.square(embeddings[a_idx] - embeddings), axis=-1)
                 # 将本类鞋距离设为无穷，不作 negative
                 neg_dists_sqr[emb_start_idx: emb_start_idx+nrof_shoes*img_per_shoe] = np.NaN
 

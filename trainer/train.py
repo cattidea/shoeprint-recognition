@@ -6,25 +6,24 @@ import tensorflow as tf
 
 from config_parser.config import TRAIN_HYPER_PARAMS, SEED
 from infer.test import data_test
-from model.models import ModelV1
+from model.models import Model
 from data_loader.image import TRANSPOSE, ALL
 from data_loader.data_loader import data_import, test_data_import
 from data_loader.batch_loader import BatchAll
 
 
-def train(resume=False):
+def train(train_config):
     """ 训练 """
-    learning_rate = TRAIN_HYPER_PARAMS["learning_rate"]
+    resume = train_config["resume"]
+    GPU = train_config["use_GPU"]
+
     num_epochs = TRAIN_HYPER_PARAMS["num_epochs"]
-    GPU = TRAIN_HYPER_PARAMS["use_GPU"]
     keep_prob = TRAIN_HYPER_PARAMS["keep_prob"]
     class_per_batch = TRAIN_HYPER_PARAMS["class_per_batch"]
     shoe_per_class = TRAIN_HYPER_PARAMS["shoe_per_class"]
     img_per_shoe = TRAIN_HYPER_PARAMS["img_per_shoe"]
-    emb_step = TRAIN_HYPER_PARAMS["emb_step"]
     save_step = TRAIN_HYPER_PARAMS["save_step"]
     test_step = TRAIN_HYPER_PARAMS["test_step"]
-    max_to_keep = TRAIN_HYPER_PARAMS["max_to_keep"]
     train_test = TRAIN_HYPER_PARAMS["train_test"]
     dev_test = TRAIN_HYPER_PARAMS["dev_test"]
 
@@ -36,7 +35,7 @@ def train(resume=False):
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-    model = ModelV1(TRAIN_HYPER_PARAMS)
+    model = Model(TRAIN_HYPER_PARAMS)
 
     # train data
     data_set = data_import(amplify=ALL)
@@ -66,9 +65,9 @@ def train(resume=False):
         if train_test or dev_test:
             test_embeddings_length = len(test_img_arrays)
         if train_test:
-            train_test_ops = model.init_test_ops("train", train_scope_length, train_num_amplify, test_embeddings_length)
+            model.init_test_ops("train", train_scope_length, train_num_amplify, test_embeddings_length)
         if dev_test:
-            dev_test_ops = model.init_test_ops("dev", dev_scope_length, dev_num_amplify, test_embeddings_length)
+            model.init_test_ops("dev", dev_scope_length, dev_num_amplify, test_embeddings_length)
 
         with tf.Session(graph=graph, config=config) as sess:
             if resume:
@@ -115,10 +114,10 @@ def train(resume=False):
                     if train_test or dev_test:
                         test_embeddings = model.compute_embeddings(test_img_arrays, test_masks, sess=sess)
                     if train_test:
-                        _, train_rate = data_test(test_data_map, "train", test_embeddings, sess, train_test_ops, log=False)
+                        _, train_rate = data_test(test_data_map, "train", test_embeddings, sess, model, log=False)
                         log_str += " train prec is {:.2%}" .format(train_rate)
                     if dev_test:
-                        _, dev_rate = data_test(test_data_map, "dev", test_embeddings, sess, dev_test_ops, log=False)
+                        _, dev_rate = data_test(test_data_map, "dev", test_embeddings, sess, model, log=False)
                         log_str += " dev prec is {:.2%}" .format(dev_rate)
 
                     prec_time_stamp = (time.time() - clock) * ((num_epochs - epoch) // test_step) + clock

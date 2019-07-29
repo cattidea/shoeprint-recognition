@@ -9,7 +9,7 @@
     "model_meta": "data/ckpt/model.ckpt.meta",
     "model_path": "data/ckpt/model.ckpt",
     "result_file": "data/result.txt",
-    "cache_loader_dir": "data/cache/data_loader/",
+    "cache_loader_dir": "data/cache/cache_loader/",
     "h5_path": "data/cache/data_set.h5",
     "json_path": "data/cache/indices.json"
   },
@@ -17,17 +17,18 @@
     "margin": 0.1,
     "learning_rate": 0.0001,
     "num_epochs": 5000,
-    "use_GPU": true,
     "keep_prob": 0.5,
-    "class_per_batch": 4,
-    "shoe_per_class": 8,
+    "class_per_batch": 6,
+    "shoe_per_class": 4,
     "img_per_shoe": 6,
-    "emb_step": 512,
+    "emb_step": 128,
     "save_step": 10,
     "test_step": 50,
     "max_to_keep": 5,
-    "train_test": true,
+    "train_test": false,
     "dev_test": true
+  },
+  "test": {
   },
   "image": {
     "W": 48,

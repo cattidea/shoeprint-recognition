@@ -3,14 +3,13 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from config_parser.config import PATHS, TRAIN_HYPER_PARAMS
-from model.models import ModelV1
+from config_parser.config import PATHS, TRAIN_HYPER_PARAMS, TEST_PARAMS
+from model.models import Model
 from data_loader.data_loader import test_data_import
 from data_loader.image import TRANSPOSE, ROTATE
 
 
 RESULT_FILE = PATHS['result_file']
-
 
 
 def data_test(test_data_map, set_type, embeddings, sess, model, log=False):
@@ -43,11 +42,11 @@ def data_test(test_data_map, set_type, embeddings, sess, model, log=False):
     return results, cnt/total
 
 
-def test():
-    emb_step = TRAIN_HYPER_PARAMS["emb_step"]
-    model = ModelV1(TRAIN_HYPER_PARAMS)
+def test(test_config):
+    GPU = test_config["use_GPU"]
+
+    model = Model(TRAIN_HYPER_PARAMS)
     img_arrays, masks, test_data_map = test_data_import(amplify=[TRANSPOSE, ROTATE], action_type="test")
-    GPU = False
 
     scope_length = len(test_data_map["test"][0]["scope_indices"])
     num_amplify = len(test_data_map["test"][0]["indices"])
@@ -69,18 +68,11 @@ def test():
             clock = time.time()
             model.get_ops_from_graph(graph)
 
-            embedding_ops = {
-                "input": model.ops["A"],
-                "masks": model.ops["A_masks"],
-                "embeddings": model.ops["A_emb"],
-                "is_training": model.ops["is_training"],
-                "keep_prob": model.ops["keep_prob"]
-            }
-            embeddings = model.compute_embeddings(img_arrays, masks, sess=sess, ops=embedding_ops, step=emb_step)
+            embeddings = model.compute_embeddings(img_arrays, masks, sess=sess)
 
             # 测试计算图
-            embeddings_shape = (len(img_arrays), *embedding_ops["embeddings"].shape[1: ])
-            model.init_test_ops("test", scope_length, num_amplify, embeddings_shape)
+            embeddings_length = len(img_arrays)
+            model.init_test_ops("test", scope_length, num_amplify, embeddings_length)
 
             res, rate = data_test(test_data_map, "test", embeddings, sess, model, log=True)
             print(rate)

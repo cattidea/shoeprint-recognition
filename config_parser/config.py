@@ -5,6 +5,7 @@ CONFIG = Config(_CONFIG_PATH)
 PATHS = PathConfig(config=CONFIG.sub_config("paths"))
 TRAIN_HYPER_PARAMS = CONFIG.sub_config("train")
 IMAGE_PARAMS = CONFIG.sub_config("image")
+TEST_PARAMS = CONFIG.sub_config("test")
 
 MARGIN = TRAIN_HYPER_PARAMS["margin"]
 IH = IMAGE_PARAMS["H"]
