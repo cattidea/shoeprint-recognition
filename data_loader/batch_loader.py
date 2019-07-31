@@ -6,14 +6,13 @@ from config_parser.config import MARGIN
 class BatchAll():
     """ Batch all 策略 在线生成 Triplet """
     def __init__(self, model, indices, class_per_batch, shoe_per_class, img_per_shoe,
-                    img_arrays, masks, sess):
+                    img_arrays, sess):
         self.model = model
         self.indices = indices
         self.class_per_batch = class_per_batch
         self.shoe_per_class = shoe_per_class
         self.img_per_shoe = img_per_shoe
         self.img_arrays = img_arrays
-        self.masks = masks
         self.sess = sess
         self.alpha = MARGIN
         self.start_index = 0
@@ -26,7 +25,7 @@ class BatchAll():
         if self.start_index >= self.shadow_index:
             self.shadow_index = self.start_index
             shoeprints, nrof_shoes_per_class, self.start_index = self.sample_shoeprint(self.indices, self.start_index, self.class_per_batch, self.shoe_per_class, self.img_per_shoe)
-            embeddings = self.model.compute_embeddings(self.img_arrays[shoeprints], self.masks[shoeprints], self.sess)
+            embeddings = self.model.compute_embeddings(self.img_arrays[shoeprints], self.sess)
             triplets = self.select_triplets(embeddings, shoeprints, nrof_shoes_per_class, self.class_per_batch, self.img_per_shoe, self.alpha)
             return self.shadow_index, triplets
         else:

@@ -46,7 +46,7 @@ def test(test_config):
     GPU = test_config["use_GPU"]
 
     model = Model(TRAIN_HYPER_PARAMS)
-    img_arrays, masks, test_data_map = test_data_import(amplify=[TRANSPOSE, ROTATE], action_type="test")
+    img_arrays, test_data_map = test_data_import(amplify=[TRANSPOSE, ROTATE], action_type="test")
 
     scope_length = len(test_data_map["test"][0]["scope_indices"])
     num_amplify = len(test_data_map["test"][0]["indices"])
@@ -68,7 +68,7 @@ def test(test_config):
             clock = time.time()
             model.get_ops_from_graph(graph)
 
-            embeddings = model.compute_embeddings(img_arrays, masks, sess=sess)
+            embeddings = model.compute_embeddings(img_arrays, sess=sess)
 
             # 测试计算图
             embeddings_length = len(img_arrays)

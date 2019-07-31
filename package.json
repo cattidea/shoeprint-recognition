@@ -10,7 +10,8 @@
     "deploy": "bash scripts/deploy.sh",
     "cache:clear": "bash scripts/cache.sh clear",
     "cache:store": "bash scripts/cache.sh store",
-    "cache:restore": "bash scripts/cache.sh restore"
+    "cache:restore": "bash scripts/cache.sh restore",
+    "push": "git push & yarn deploy"
   },
   "keywords": [
     "python",
@@ -22,8 +23,7 @@
   "license": "MIT",
   "husky": {
     "hooks": {
-      "pre-commit": "pretty-quick --staged && node scripts/version_inc.js",
-      "pre-push": "npm run deploy"
+      "pre-commit": "pretty-quick --staged && node scripts/version_inc.js"
     }
   },
   "devDependencies": {

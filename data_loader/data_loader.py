@@ -4,7 +4,7 @@ import h5py
 import random
 import numpy as np
 
-from config_parser.config import PATHS, SEED
+from config_parser.config import PATHS
 from data_loader.base import CacheLoader
 from data_loader.image import image2array
 
@@ -15,8 +15,7 @@ SIMPLE_DIR = PATHS["simple_dir"]
 SHOEPRINT_DIR_TEST = PATHS["shoeprint_test_dir"]
 DETERMINE_FILE = PATHS["determine_file"]
 DETERMINE_FILE_TEST = PATHS["determine_file_test"]
-random.seed(SEED)
-np.random.seed(SEED)
+
 
 @CacheLoader(name="simple", debug=True)
 def get_simple_arrays(amplify):
@@ -25,11 +24,6 @@ def get_simple_arrays(amplify):
     [
         [<img1_array1>, <img1_array2>, ...],
         [<img2_array1>, <img2_array2>, ...],
-        ...
-    ],
-    [
-        [<img1_mask1>, <img1_mask2>, ...],
-        [<img2_mask1>, <img2_mask2>, ...],
         ...
     ],
     {
@@ -42,7 +36,6 @@ def get_simple_arrays(amplify):
     """
     simple_map = {}
     simple_arrays = []
-    simple_masks = []
     types = os.listdir(SIMPLE_DIR)
     index = 0
     for i, type_id in enumerate(types):
@@ -51,14 +44,13 @@ def get_simple_arrays(amplify):
         img_path = os.path.join(type_dir, os.listdir(type_dir)[0])
         simple_map[type_id] = {}
 
-        img_array, masks = image2array(img_path, amplify)
+        img_array = image2array(img_path, amplify)
 
         simple_map[type_id]["img_indices"] = [index + j for j in range(len(img_array))]
         index += len(img_array)
         simple_arrays.extend(img_array)
-        simple_masks.extend(masks)
     assert len(simple_arrays) == index
-    return simple_arrays, simple_masks, simple_map
+    return simple_arrays, simple_map
 
 
 @CacheLoader(name="shoeprint", debug=True)
@@ -70,11 +62,6 @@ def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
     [
         [<img1_array1>, <img1_array2>, ...],
         [<img2_array1>, <img2_array2>, ...],
-        ...
-    ],
-    [
-        [<img1_mask1>, <img1_mask2>, ...],
-        [<img2_mask1>, <img2_mask2>, ...],
         ...
     ],
     {
@@ -94,7 +81,6 @@ def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
     """
     shoeprint_map = {}
     shoeprint_arrays = []
-    shoeprint_masks = []
     type_map = {}
     types = os.listdir(SHOEPRINT_DIR) if action_type == "train" else os.listdir(SHOEPRINT_DIR_TEST)
     type_counter = {"train": set(), "dev": set(), "test": set()}
@@ -110,13 +96,12 @@ def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
         type_map[type_id] = []
         for filename in os.listdir(type_dir):
             img_path = os.path.join(type_dir, filename)
-            img_array, masks = image2array(img_path, amplify)
+            img_array = image2array(img_path, amplify)
             shoeprint_map[filename] = {}
             shoeprint_map[filename]["type_id"] = type_id
             shoeprint_map[filename]["img_indices"] = [index + j for j in range(len(img_array))]
             shoeprint_map[filename]["set_type"] = set_type
             shoeprint_arrays.extend(img_array)
-            shoeprint_masks.extend(masks)
             index += len(img_array)
 
             type_counter[set_type].add(type_id)
@@ -126,7 +111,7 @@ def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
     else:
         print("测试数据共 {} 类".format(len(type_counter["test"])))
     assert len(shoeprint_arrays) == index - simple_length
-    return shoeprint_arrays, shoeprint_masks, shoeprint_map, type_map
+    return shoeprint_arrays, shoeprint_map, type_map
 
 
 @CacheLoader(name="determine", debug=True)
@@ -201,11 +186,10 @@ def test_data_import(amplify=[], action_type="test"):
     """
 
     determine_scope = get_determine_scope(action_type=action_type)
-    simple_arrays, simple_masks, simple_map = get_simple_arrays(amplify=[])
-    shoeprint_arrays, shoeprint_masks, shoeprint_map, _ = get_shoeprint_arrays(
+    simple_arrays, simple_map = get_simple_arrays(amplify=[])
+    shoeprint_arrays, shoeprint_map, _ = get_shoeprint_arrays(
         amplify=amplify, simple_length=len(simple_arrays), action_type=action_type)
     img_arrays = np.concatenate((simple_arrays, shoeprint_arrays))
-    masks = np.concatenate((simple_masks, shoeprint_masks))
     test_data_map = {"train": [], "dev": [], "test": []}
 
     print("simple {} shoeprint {} ".format(len(simple_arrays), len(shoeprint_arrays)))
@@ -232,7 +216,7 @@ def test_data_import(amplify=[], action_type="test"):
         for j in range(scope_length):
             item["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
         test_data_map[set_type].append(item)
-    return img_arrays, masks, test_data_map
+    return img_arrays, test_data_map
 
 
 def data_import(amplify=[]):
@@ -247,20 +231,17 @@ def data_import(amplify=[]):
     if not os.path.exists(H5_PATH) or not os.path.exists(JSON_PATH):
         print("未发现处理好的数据文件，正在处理...")
         determine_scope = get_determine_scope(action_type="train")
-        simple_arrays, simple_masks, simple_map = get_simple_arrays(amplify)
-        shoeprint_arrays, shoeprint_masks, shoeprint_map, type_map = get_shoeprint_arrays(
+        simple_arrays, simple_map = get_simple_arrays(amplify)
+        shoeprint_arrays, shoeprint_map, type_map = get_shoeprint_arrays(
             amplify, simple_length=len(simple_arrays), action_type="train")
         img_arrays = np.concatenate((simple_arrays, shoeprint_arrays))
-        masks = np.concatenate((simple_masks, shoeprint_masks))
         indices = get_indices(simple_map, shoeprint_map, type_map)
 
         data_set["img_arrays"] = img_arrays
-        data_set["masks"] = masks
         data_set["indices"] = indices
 
         h5f = h5py.File(H5_PATH, 'w')
         h5f["img_arrays"] = data_set["img_arrays"]
-        h5f["masks"] = data_set["masks"]
         h5f.close()
 
         with open(JSON_PATH, 'w', encoding="utf8") as f:
@@ -269,7 +250,6 @@ def data_import(amplify=[]):
         print("发现处理好的数据文件，正在读取...")
         h5f = h5py.File(H5_PATH, 'r')
         data_set["img_arrays"] = h5f["img_arrays"][: ]
-        data_set["masks"] = h5f["masks"][: ]
         h5f.close()
 
         with open(JSON_PATH, 'r', encoding="utf8") as f:

@@ -31,7 +31,6 @@ def image2array(img_path, amplify=ALL):
     amplify: list<method or tuple<method>> """
 
     arrays = []
-    masks = []
     origin = _read_img_cv(img_path)
     img_arrs = [origin]
 
@@ -49,16 +48,7 @@ def image2array(img_path, amplify=ALL):
         arr = _resize_cv(img_arr, (W, H)).reshape((H, W, 1))
         arrays.append(arr)
 
-    for array in arrays:
-        mask_gray = _resize_cv(array, (W // k_W, H // k_H), interpolation=cv2.INTER_NEAREST)
-        # 使用膨胀运算保证含有图像的区域均被标记
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        mask_gray = cv2.dilate(mask_gray, kernel)
-        mask = mask_gray > GAMMA
-        mask = mask.reshape((H // k_H, W // k_W, 1))
-        masks.append(mask)
-
-    return arrays, masks
+    return arrays
 
 
 def _read_img(img_path):

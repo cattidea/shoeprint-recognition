@@ -6,7 +6,7 @@ class Config(dict):
     """ 配置基类 """
 
     def __init__(self, path=None, config={}):
-        if path and os.path.exists(path):
+        if path is not None and os.path.exists(path):
             config.update(self.read(path))
         super().__init__(config)
 
@@ -17,8 +17,10 @@ class Config(dict):
         return _jObject
 
 
-    def sub_config(self, name):
-        return Config(config=self[name])
+    def sub_config(self, name, cls=None):
+        if cls is None:
+            cls = type(self)
+        return cls(config=self[name])
 
 
 class PathConfig(Config):

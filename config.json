@@ -8,17 +8,17 @@
     "model_dir": "data/ckpt/",
     "model_meta": "data/ckpt/model.ckpt.meta",
     "model_path": "data/ckpt/model.ckpt",
+    "recorder_path": "data/ckpt/recorder.csv",
     "result_file": "data/result.txt",
     "cache_loader_dir": "data/cache/cache_loader/",
     "h5_path": "data/cache/data_set.h5",
     "json_path": "data/cache/indices.json"
   },
   "train": {
-    "margin": 0.1,
     "learning_rate": 0.0001,
-    "num_epochs": 5000,
+    "num_epochs": 2500,
     "keep_prob": 0.5,
-    "class_per_batch": 6,
+    "class_per_batch": 4,
     "shoe_per_class": 4,
     "img_per_shoe": 6,
     "emb_step": 128,
@@ -37,5 +37,6 @@
     "k_H": 6,
     "gamma": 63
   },
+  "margin": 0.2,
   "seed": 1111
 }
