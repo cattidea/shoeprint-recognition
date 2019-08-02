@@ -216,7 +216,7 @@ def test_data_import(amplify=[], action_type="test"):
         for j in range(scope_length):
             item["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
         test_data_map[set_type].append(item)
-    return img_arrays, test_data_map
+    return img_arrays, test_data_map, len(simple_arrays)
 
 
 def data_import(amplify=[]):

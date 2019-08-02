@@ -51,7 +51,7 @@ def train(train_config):
 
     # test data
     if train_test or dev_test:
-        test_img_arrays, test_data_map = test_data_import(amplify=[TRANSPOSE], action_type="train")
+        test_img_arrays, test_data_map, _ = test_data_import(amplify=[TRANSPOSE], action_type="train")
         train_scope_length = len(test_data_map["train"][0]["scope_indices"])
         train_num_amplify = len(test_data_map["train"][0]["indices"])
         dev_scope_length = len(test_data_map["dev"][0]["scope_indices"])

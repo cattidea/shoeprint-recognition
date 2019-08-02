@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from config_parser.config import IH, IW, MARGIN, PATHS, k_H, k_W
+from config_parser.config import IH, IW, MARGIN, PATHS
 from model.base import ModelBase
 
 
@@ -175,7 +175,7 @@ class TripletModel(ModelBase):
 
     @staticmethod
     def conv2d(X, scope, filter, kernel_size=3, strides=1, padding="same", activation=None, batch_norm=False, is_training=False):
-        """ 卷积，带 BN 层 """
+        """ 卷积，可添加 BN 层 """
         X = tf.layers.conv2d(inputs=X, filters=filter, kernel_size=kernel_size, strides=strides, padding=padding,
                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.1), name=scope+"_CONV", reuse=tf.AUTO_REUSE)
         if batch_norm:
@@ -186,7 +186,49 @@ class TripletModel(ModelBase):
 
 
     @staticmethod
+    def separable_conv2d(X, scope, filter, channel_multiplier=1, kernel_size=3, strides=1, padding="same", activation=None, batch_norm=False, is_training=False):
+        """ 深度可分离卷积， 可添加 BN 层 """
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+        if isinstance(strides, int):
+            strides = (strides, strides)
+
+        with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+            depthwish_filter = tf.get_variable(name='depthwish_filter' , shape=[kernel_size[0],kernel_size[1],X.shape[3],channel_multiplier],
+                                                initializer=tf.random_normal_initializer(mean=0, stddev=0.1))
+            pointwise_filter = tf.get_variable(name='pointwise_filter' , shape=[1,1,X.shape[3]*channel_multiplier,filter],
+                                                initializer=tf.random_normal_initializer(mean=0, stddev=0.1))
+        X = tf.nn.separable_conv2d(input=X, depthwise_filter=depthwish_filter, pointwise_filter=pointwise_filter,
+                                    strides=[1,strides[0],strides[1],1], padding=padding.upper())
+        if batch_norm:
+            X = tf.layers.batch_normalization(inputs=X, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
+        if activation:
+            X = activation(X)
+        return X
+
+
+    @staticmethod
+    def dw_conv2d(X, scope, channel_multiplier=1, kernel_size=3, strides=1, padding="same", activation=None, batch_norm=False, is_training=False):
+        """ 深度卷积，未添加 1 x 1 卷积，可添加 BN 层 """
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+        if isinstance(strides, int):
+            strides = (strides, strides)
+
+        with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+            depthwish_filter = tf.get_variable(name='depthwish_filter' , shape=[kernel_size[0],kernel_size[1],X.shape[3],channel_multiplier],
+                                                initializer=tf.random_normal_initializer(mean=0, stddev=0.1))
+        X = tf.nn.depthwise_conv2d(input=X, filter=depthwish_filter, strides=[1,strides[0],strides[1],1], padding=padding.upper())
+        if batch_norm:
+            X = tf.layers.batch_normalization(inputs=X, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
+        if activation:
+            X = activation(X)
+        return X
+
+
+    @staticmethod
     def dense(X, name, units, activation=None, keep_prob=1):
+        """ 全连接层 """
         X = tf.layers.dense(inputs=X, units=units, name=name, reuse=tf.AUTO_REUSE)
         if keep_prob != 1:
             X = tf.nn.dropout(X, keep_prob)

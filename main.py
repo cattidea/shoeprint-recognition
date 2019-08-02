@@ -11,6 +11,7 @@ if __name__ == "__main__":
     parser.add_argument('action', help='action type (train/test)')
     parser.add_argument('--resume', action='store_true', help='恢复已有模型继续训练')
     parser.add_argument('--no-gpu', action='store_true', help='不使用 GPU')
+    parser.add_argument('--use-cache', action='store_true', help='使用已有的 simple cache')
 
     args = parser.parse_args()
 
@@ -21,6 +22,7 @@ if __name__ == "__main__":
 
     test_config = {
         "use_GPU": not args.no_gpu,
+        "use_cache": args.use_cache,
     }
 
     if args.action == "train":

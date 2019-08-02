@@ -11,8 +11,6 @@ from config_parser.config import IMAGE_PARAMS
 
 W = IMAGE_PARAMS["W"]
 H = IMAGE_PARAMS["H"]
-k_W = IMAGE_PARAMS["k_W"]
-k_H = IMAGE_PARAMS["k_H"]
 GAMMA = IMAGE_PARAMS["gamma"]
 
 

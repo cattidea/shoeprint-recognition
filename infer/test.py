@@ -7,9 +7,11 @@ from config_parser.config import PATHS, TRAIN_HYPER_PARAMS, TEST_PARAMS
 from model.models import Model
 from data_loader.data_loader import test_data_import
 from data_loader.image import TRANSPOSE, ROTATE
+from data_loader.base import Cacher
 
 
 RESULT_FILE = PATHS['result_file']
+SIMPLE_EMB_CACHE = PATHS["simple_emb_cache"]
 
 
 def data_test(test_data_map, set_type, embeddings, sess, model, log=False):
@@ -44,9 +46,11 @@ def data_test(test_data_map, set_type, embeddings, sess, model, log=False):
 
 def test(test_config):
     GPU = test_config["use_GPU"]
+    use_cache = test_config["use_cache"]
 
     model = Model(TRAIN_HYPER_PARAMS)
-    img_arrays, test_data_map = test_data_import(amplify=[TRANSPOSE, ROTATE], action_type="test")
+    simple_cacher = Cacher(SIMPLE_EMB_CACHE)
+    img_arrays, test_data_map, simple_length = test_data_import(amplify=[TRANSPOSE], action_type="test")
 
     scope_length = len(test_data_map["test"][0]["scope_indices"])
     num_amplify = len(test_data_map["test"][0]["indices"])
@@ -68,7 +72,15 @@ def test(test_config):
             clock = time.time()
             model.get_ops_from_graph(graph)
 
-            embeddings = model.compute_embeddings(img_arrays, sess=sess)
+            if use_cache and os.path.exists(SIMPLE_EMB_CACHE):
+                simple_embs = simple_cacher.read()
+                shoeprint_embs = model.compute_embeddings(img_arrays[simple_length: ], sess=sess)
+                embeddings = np.concatenate((simple_embs, shoeprint_embs))
+                print("成功读取预编码模板")
+            else:
+                embeddings = model.compute_embeddings(img_arrays, sess=sess)
+                simple_embs = embeddings[: simple_length]
+                simple_cacher.save(simple_embs)
 
             # 测试计算图
             embeddings_length = len(img_arrays)
