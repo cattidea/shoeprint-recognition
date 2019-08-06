@@ -30,6 +30,7 @@ def train(train_config):
     test_step = TRAIN_HYPER_PARAMS["test_step"]
     train_test = TRAIN_HYPER_PARAMS["train_test"]
     dev_test = TRAIN_HYPER_PARAMS["dev_test"]
+    max_mini_batch_size = class_per_batch * shoe_per_class * (shoe_per_class-1) / 2
 
     # GPU Config
     config = tf.ConfigProto()
@@ -95,19 +96,20 @@ def train(train_config):
 
                     triplet_list = [list(line) for line in zip(*triplets)]
                     if not triplet_list:
+                        train_costs.append(0)
                         continue
                     mini_batch_size = len(triplet_list[0])
 
                     _, temp_cost = sess.run([model.ops["train_step"], model.ops["loss"]], feed_dict={
-                        model.ops["A"]: np.divide(img_arrays[triplet_list[0]], 255, dtype=np.float32),
-                        model.ops["P"]: np.divide(img_arrays[triplet_list[1]], 255, dtype=np.float32),
-                        model.ops["N"]: np.divide(img_arrays[triplet_list[2]], 255, dtype=np.float32),
+                        model.ops["A"]: np.divide(img_arrays[triplet_list[0]], 127.5, dtype=np.float32) - 1,
+                        model.ops["P"]: np.divide(img_arrays[triplet_list[1]], 127.5, dtype=np.float32) - 1,
+                        model.ops["N"]: np.divide(img_arrays[triplet_list[2]], 127.5, dtype=np.float32) - 1,
                         model.ops["is_training"]: True,
                         model.ops["keep_prob"]: keep_prob
                         })
+                    temp_cost /= max_mini_batch_size
                     print("{} mini-batch > {}/{} size: {} cost: {} ".format(
-                        epoch, batch_index, train_size, mini_batch_size, temp_cost / mini_batch_size), end="\r")
-                    temp_cost /= mini_batch_size
+                        epoch, batch_index, train_size, mini_batch_size, temp_cost), end="\r")
                     train_costs.append(temp_cost)
                 train_cost = sum(train_costs) / len(train_costs)
 

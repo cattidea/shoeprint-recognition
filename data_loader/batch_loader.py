@@ -92,7 +92,7 @@ class BatchAll():
                 a_idx = emb_start_idx + j + a_offset
                 neg_dists_sqr = np.sum(np.square(embeddings[a_idx] - embeddings), axis=-1)
                 # 将本类鞋距离设为无穷，不作 negative
-                neg_dists_sqr[emb_start_idx: emb_start_idx+nrof_shoes*img_per_shoe] = np.NaN
+                neg_dists_sqr[emb_start_idx: emb_start_idx+nrof_shoes*img_per_shoe] = np.inf
 
                 for k in range(j+img_per_shoe, nrof_shoes*img_per_shoe, img_per_shoe):
                     p_offset = np.random.randint(img_per_shoe)
@@ -107,6 +107,11 @@ class BatchAll():
                         rnd_idx = np.random.randint(nrof_random_negs)
                         n_idx = all_neg[rnd_idx]
                         triplets.append((shoeprints[a_idx], shoeprints[p_idx], shoeprints[n_idx]))
+
+                    # neg_loss = neg_dists_sqr - pos_dist_sqr - alpha
+                    # n_idx = np.argmin(neg_loss)
+                    # if neg_loss[n_idx] < 0:
+                    #     triplets.append((shoeprints[a_idx], shoeprints[p_idx], shoeprints[n_idx]))
 
             emb_start_idx += nrof_shoes * img_per_shoe
 

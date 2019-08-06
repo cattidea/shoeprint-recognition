@@ -9,7 +9,6 @@ TEST_PARAMS = CONFIG.sub_config("test")
 
 IH = IMAGE_PARAMS["H"]
 IW = IMAGE_PARAMS["W"]
-GAMMA = IMAGE_PARAMS["gamma"]
 
 CACHE_LOADER_DIR = PATHS["cache_loader_dir"]
 

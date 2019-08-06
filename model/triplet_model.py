@@ -121,7 +121,7 @@ class TripletModel(ModelBase):
                 print("compute embeddings {}/{} ".format(i, array_length), end="\r")
             input_batch = input[i: i + step]
             embeddings_batch = sess.run(ops["embeddings"], feed_dict={
-                ops["input"]: np.divide(input_batch, 255, dtype=np.float32),
+                ops["input"]: np.divide(input_batch, 127.5, dtype=np.float32) - 1,
                 ops["is_training"]: False,
                 ops["keep_prob"]: 1
                 })
@@ -209,7 +209,7 @@ class TripletModel(ModelBase):
 
     @staticmethod
     def dw_conv2d(X, scope, channel_multiplier=1, kernel_size=3, strides=1, padding="same", activation=None, batch_norm=False, is_training=False):
-        """ 深度卷积，未添加 1 x 1 卷积，可添加 BN 层 """
+        """ 逐层卷积，未添加 1 x 1 卷积，可添加 BN 层 """
         if isinstance(kernel_size, int):
             kernel_size = (kernel_size, kernel_size)
         if isinstance(strides, int):
@@ -265,3 +265,33 @@ class TripletModel(ModelBase):
         if activation:
             res = activation(res)
         return res
+
+
+    def nnet_v1(self, input, filters, scope, strides=1, activate=True, batch_norm=False, is_training=False):
+        """ 一个小尝试 """
+        assert filters % 2 == 0
+        X = input
+        filters = filters * 2 if activate else filters
+
+        X_dw_conv = self.conv2d(X, scope=scope+"_1_1_conv_1", filter=filters//2, kernel_size=1, strides=1, padding="same")
+        X_dw_conv = self.dw_conv2d(X_dw_conv, scope=scope+"_dw_conv_2", kernel_size=3, strides=1, padding="same")
+        X_res = self.conv2d(X, scope=scope+"_1_1_conv_3", filter=filters//2, kernel_size=1, strides=1, padding="same")
+        X = tf.concat([X_dw_conv, X_res], axis=-1)
+
+        if strides != 1:
+            X_size_reduce_pool = self.conv2d(X, scope=scope+"_1_1_conv_4", filter=filters//2, kernel_size=1, strides=1, padding="same")
+            X_size_reduce_pool = tf.layers.max_pooling2d(X_size_reduce_pool, pool_size=3, strides=strides, padding="same")
+            X_size_reduce_dw_conv = self.conv2d(X, scope=scope+"_1_1_conv_5", filter=filters//2, kernel_size=1, strides=1, padding="same")
+            X_size_reduce_dw_conv = self.dw_conv2d(X_size_reduce_dw_conv, scope=scope+"_size_reduce_conv_6", kernel_size=3, strides=strides, padding="same")
+            X = tf.concat([X_size_reduce_pool, X_size_reduce_dw_conv], axis=-1)
+
+        if activate:
+            X_activate = self.conv2d(X, scope=scope+"_1_1_conv_7", filter=filters//4*3, kernel_size=1, strides=1, padding="same")
+            X_activate = self.maxout(inputs=X_activate, num_units=filters//4)
+            X_no_activate = self.conv2d(X, scope=scope+"_1_1_conv_8", filter=filters//4, kernel_size=1, strides=1, padding="same")
+            X = tf.concat([X_activate, X_no_activate], axis=-1)
+
+        if batch_norm:
+            X = tf.layers.batch_normalization(inputs=X, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
+
+        return X

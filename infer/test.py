@@ -6,15 +6,16 @@ import tensorflow as tf
 from config_parser.config import PATHS, TRAIN_HYPER_PARAMS, TEST_PARAMS
 from model.models import Model
 from data_loader.data_loader import test_data_import
-from data_loader.image import TRANSPOSE, ROTATE
+from data_loader.image import TRANSPOSE, ROTATE, BILATERAL_BLUR, img_plot
 from data_loader.base import Cacher
 
 
 RESULT_FILE = PATHS['result_file']
 SIMPLE_EMB_CACHE = PATHS["simple_emb_cache"]
+GLOBAL = {}
 
 
-def data_test(test_data_map, set_type, embeddings, sess, model, log=False):
+def data_test(test_data_map, set_type, embeddings, sess, model, log=False, plot=False):
     cnt = 0
     total = 0
     results = []
@@ -38,6 +39,13 @@ def data_test(test_data_map, set_type, embeddings, sess, model, log=False):
             pred_dist = np.argsort(np.argsort(res))[label]
             print("{:3} y_pred:{:3} y_label:{:3} dist:{:2} {:.2%}".format(i, min_index, label, pred_dist, cnt/total))
 
+        if plot:
+            img_plot(
+                GLOBAL["img_arrays"][indices[0]],
+                GLOBAL["img_arrays"][item["scope_indices"][label]],
+                GLOBAL["img_arrays"][item["scope_indices"][min_index]]
+            )
+
         results.append(res)
     if log:
         print("{:.2%}".format(cnt/total))
@@ -50,7 +58,8 @@ def test(test_config):
 
     model = Model(TRAIN_HYPER_PARAMS)
     simple_cacher = Cacher(SIMPLE_EMB_CACHE)
-    img_arrays, test_data_map, simple_length = test_data_import(amplify=[TRANSPOSE], action_type="test")
+    img_arrays, test_data_map, simple_length = test_data_import(amplify=[(TRANSPOSE, BILATERAL_BLUR)], action_type="test")
+    GLOBAL["img_arrays"] = img_arrays
 
     scope_length = len(test_data_map["test"][0]["scope_indices"])
     num_amplify = len(test_data_map["test"][0]["indices"])
@@ -86,7 +95,7 @@ def test(test_config):
             embeddings_length = len(img_arrays)
             model.init_test_ops("test", scope_length, num_amplify, embeddings_length)
 
-            res, rate = data_test(test_data_map, "test", embeddings, sess, model, log=True)
+            res, rate = data_test(test_data_map, "test", embeddings, sess, model, log=True, plot=True)
             print(rate)
             print("{:.2f}s".format(time.time() - clock))
 

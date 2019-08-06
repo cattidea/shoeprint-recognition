@@ -11,7 +11,6 @@ from config_parser.config import IMAGE_PARAMS
 
 W = IMAGE_PARAMS["W"]
 H = IMAGE_PARAMS["H"]
-GAMMA = IMAGE_PARAMS["gamma"]
 
 
 TRANSPOSE = lambda x: _transpose_amplify_cv(x)
@@ -21,6 +20,10 @@ NOISE = lambda x: _noise_amplify(x, density_noise=0.02)
 RANDOM_BLOCK = lambda x: _random_block_amplify(x, num_block=30, block_size=(40, 40))
 AREA_BLOCK = lambda x: _area_block_amplify(x)
 DEFORMATION = lambda x: _deformation_amplify(x, k=500, kernel_size=(225, 225), sigma=15)
+MEDIAN_BLUR = lambda x: _median_blur_amplify(x)
+GAUSSIAN_BLUR = lambda x: _gaussian_blur_amplify(x)
+BILATERAL_BLUR = lambda x: _bilateral_blur_amplify(x)
+AVERAGE_BLUR = lambda x: _average_blur_amplify(x)
 ALL = [TRANSPOSE, (ROTATE, OFFSET, NOISE, RANDOM_BLOCK, AREA_BLOCK, DEFORMATION)]
 
 
@@ -197,6 +200,30 @@ def _deformation_amplify_v2(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     return [defor_arr]
 
 
+@amplify
+def _median_blur_amplify(img_arr):
+    """ 中值滤波扩增 """
+    return [cv2.medianBlur(img_arr, 5)]
+
+
+@amplify
+def _gaussian_blur_amplify(img_arr):
+    """ 高斯滤波扩增 """
+    return [cv2.GaussianBlur(img_arr, (7, 7), 0)]
+
+
+@amplify
+def _bilateral_blur_amplify(img_arr):
+    """ 双边滤波扩增 """
+    return [cv2.bilateralFilter(img_arr, 40, 75, 75)]
+
+
+@amplify
+def _average_blur_amplify(img_arr):
+    """ 均值滤波扩增 """
+    return [cv2.blur(img_arr,(5, 5))]
+
+
 def conv2(img, kernel):
     """ 对图片矩阵进行卷积处理
     ref: https://blog.csdn.net/u013044310/article/details/82786957
@@ -218,6 +245,8 @@ def conv2(img, kernel):
     return res
 
 
-def plot(img_array, shape=(H, W)):
-    plt.imshow(np.reshape(img_array, shape), cmap='gray')
+def img_plot(*img_arrays, shape=(H, W)):
+    img_arrays = [np.reshape(img_array, shape) for img_array in img_arrays]
+    img = np.concatenate(img_arrays, axis=1)
+    plt.imshow(img, cmap='gray')
     plt.show()

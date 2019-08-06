@@ -14,7 +14,7 @@ SHOEPRINT_DIR = PATHS["shoeprint_dir"]
 SIMPLE_DIR = PATHS["simple_dir"]
 SHOEPRINT_DIR_TEST = PATHS["shoeprint_test_dir"]
 DETERMINE_FILE = PATHS["determine_file"]
-DETERMINE_FILE_TEST = PATHS["determine_file_test"]
+DETERMINE_FILE_TEST = PATHS["determine_test_file"]
 
 
 @CacheLoader(name="simple", debug=True)
