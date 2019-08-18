@@ -78,7 +78,7 @@ def train(train_config):
         with tf.Session(graph=graph, config=config) as sess:
             if resume:
                 model.load(sess)
-                print("成功恢复模型")
+                print("成功恢复模型 {}".format(model.name))
             else:
                 model.init_saver()
                 sess.run(tf.global_variables_initializer())
@@ -90,14 +90,23 @@ def train(train_config):
                 recorder.update_checkpoint(epoch)
                 # train
                 train_costs = []
+                triplet_cache = []
                 for batch_index, triplets in BatchAll(
                     model, indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
                     img_arrays=img_arrays, sess=sess):
 
-                    triplet_list = [list(line) for line in zip(*triplets)]
-                    if not triplet_list:
+                    if len(triplets) == 0:
                         train_costs.append(0)
                         continue
+                    elif len(triplets) + len(triplet_cache) <= max_mini_batch_size // 2:
+                        triplet_cache.extend(triplets)
+                        train_costs.append(0)
+                        continue
+                    elif max_mini_batch_size // 2 < len(triplets) + len(triplet_cache) <= max_mini_batch_size:
+                        triplets.extend(triplet_cache)
+                        triplet_cache.clear()
+
+                    triplet_list = [list(line) for line in zip(*triplets)]
                     mini_batch_size = len(triplet_list[0])
 
                     _, temp_cost = sess.run([model.ops["train_step"], model.ops["loss"]], feed_dict={
@@ -118,21 +127,21 @@ def train(train_config):
                     epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost)
 
                 if epoch % test_step == 0:
-                    train_rate, dev_rate = "", ""
+                    train_acc, dev_acc = "", ""
                     if train_test or dev_test:
                         test_embeddings = model.compute_embeddings(test_img_arrays, sess=sess)
 
                     if train_test:
-                        _, train_rate = data_test(test_data_map, "train", test_embeddings, sess, model, log=False)
-                        log_str += " train prec is {:.2%}" .format(train_rate)
+                        _, train_acc = data_test(test_data_map, "train", test_embeddings, sess, model, log=False)
+                        log_str += " train acc is {:.2%}" .format(train_acc)
                     if dev_test:
-                        _, dev_rate = data_test(test_data_map, "dev", test_embeddings, sess, model, log=False)
-                        log_str += " dev prec is {:.2%}" .format(dev_rate)
+                        _, dev_acc= data_test(test_data_map, "dev", test_embeddings, sess, model, log=False)
+                        log_str += " dev acc is {:.2%}" .format(dev_acc)
 
                     prec_time_stamp = (time.time() - clock) * ((num_epochs - epoch) // test_step) + clock
                     clock = time.time()
                     log_str += " >> {} ".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp)))
-                    recorder.record_item(epoch, [train_rate, dev_rate])
+                    recorder.record_item(epoch, [train_acc, dev_acc])
 
                 if epoch % save_step == 0:
                     model.save(sess)

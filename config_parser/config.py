@@ -12,9 +12,9 @@ IW = IMAGE_PARAMS["W"]
 
 CACHE_LOADER_DIR = PATHS["cache_loader_dir"]
 
-MODEL_PATH = PATHS['model_path']
+
 MODEL_DIR = PATHS['model_dir']
-MODEL_META = PATHS['model_meta']
+
 
 MARGIN = CONFIG["margin"]
 SEED = CONFIG["seed"]

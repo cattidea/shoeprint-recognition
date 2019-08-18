@@ -95,8 +95,8 @@ def test(test_config):
             embeddings_length = len(img_arrays)
             model.init_test_ops("test", scope_length, num_amplify, embeddings_length)
 
-            res, rate = data_test(test_data_map, "test", embeddings, sess, model, log=True, plot=True)
-            print(rate)
+            res, acc = data_test(test_data_map, "test", embeddings, sess, model, log=True, plot=True)
+            print(acc)
             print("{:.2f}s".format(time.time() - clock))
 
     with open(RESULT_FILE, "w") as f:

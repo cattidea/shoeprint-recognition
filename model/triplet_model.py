@@ -208,7 +208,7 @@ class TripletModel(ModelBase):
 
 
     @staticmethod
-    def dw_conv2d(X, scope, channel_multiplier=1, kernel_size=3, strides=1, padding="same", activation=None, batch_norm=False, is_training=False):
+    def deepwise_conv2d(X, scope, channel_multiplier=1, kernel_size=3, strides=1, padding="same", activation=None, batch_norm=False, is_training=False):
         """ 逐层卷积，未添加 1 x 1 卷积，可添加 BN 层 """
         if isinstance(kernel_size, int):
             kernel_size = (kernel_size, kernel_size)
@@ -216,9 +216,9 @@ class TripletModel(ModelBase):
             strides = (strides, strides)
 
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-            depthwish_filter = tf.get_variable(name='depthwish_filter' , shape=[kernel_size[0],kernel_size[1],X.shape[3],channel_multiplier],
+            depthwise_filter = tf.get_variable(name='depthwise_filter' , shape=[kernel_size[0],kernel_size[1],X.shape[3],channel_multiplier],
                                                 initializer=tf.random_normal_initializer(mean=0, stddev=0.1))
-        X = tf.nn.depthwise_conv2d(input=X, filter=depthwish_filter, strides=[1,strides[0],strides[1],1], padding=padding.upper())
+        X = tf.nn.depthwise_conv2d(input=X, filter=depthwise_filter, strides=[1,strides[0],strides[1],1], padding=padding.upper())
         if batch_norm:
             X = tf.layers.batch_normalization(inputs=X, training=is_training, name=scope+"_BN", reuse=tf.AUTO_REUSE)
         if activation:
@@ -274,7 +274,7 @@ class TripletModel(ModelBase):
         filters = filters * 2 if activate else filters
 
         X_dw_conv = self.conv2d(X, scope=scope+"_1_1_conv_1", filter=filters//2, kernel_size=1, strides=1, padding="same")
-        X_dw_conv = self.dw_conv2d(X_dw_conv, scope=scope+"_dw_conv_2", kernel_size=3, strides=1, padding="same")
+        X_dw_conv = self.deepwise_conv2d(X_dw_conv, scope=scope+"_dw_conv_2", kernel_size=3, strides=1, padding="same")
         X_res = self.conv2d(X, scope=scope+"_1_1_conv_3", filter=filters//2, kernel_size=1, strides=1, padding="same")
         X = tf.concat([X_dw_conv, X_res], axis=-1)
 
@@ -282,7 +282,7 @@ class TripletModel(ModelBase):
             X_size_reduce_pool = self.conv2d(X, scope=scope+"_1_1_conv_4", filter=filters//2, kernel_size=1, strides=1, padding="same")
             X_size_reduce_pool = tf.layers.max_pooling2d(X_size_reduce_pool, pool_size=3, strides=strides, padding="same")
             X_size_reduce_dw_conv = self.conv2d(X, scope=scope+"_1_1_conv_5", filter=filters//2, kernel_size=1, strides=1, padding="same")
-            X_size_reduce_dw_conv = self.dw_conv2d(X_size_reduce_dw_conv, scope=scope+"_size_reduce_conv_6", kernel_size=3, strides=strides, padding="same")
+            X_size_reduce_dw_conv = self.deepwise_conv2d(X_size_reduce_dw_conv, scope=scope+"_size_reduce_conv_6", kernel_size=3, strides=strides, padding="same")
             X = tf.concat([X_size_reduce_pool, X_size_reduce_dw_conv], axis=-1)
 
         if activate:

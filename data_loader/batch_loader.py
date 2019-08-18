@@ -98,7 +98,6 @@ class BatchAll():
                     p_offset = np.random.randint(img_per_shoe)
                     p_idx = emb_start_idx + k + p_offset
                     pos_dist_sqr = np.sum(np.square(embeddings[a_idx] - embeddings[p_idx]))
-                    # 由于 neg_dist 中有 NaN ，故会有 RuntimeWarning
                     all_neg = np.where(neg_dists_sqr-pos_dist_sqr < alpha)[0]
                     nrof_random_negs = all_neg.shape[0]
 

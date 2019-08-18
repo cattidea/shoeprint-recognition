@@ -15,20 +15,31 @@ class CacheNotFoundError(Exception):
 class Cacher():
     """ Python 通用数据缓存器 """
 
-    def __init__(self, path, type=".dat"):
+    def __init__(self, path, type=".pkl", name=None):
         self.path = path
         self.type = type
+        self.name = name
 
     def read(self):
         if os.path.exists(self.path):
-            with open(self.path, 'rb') as f:
-                data = pickle.load(f)
+            data = self._load()
+            if self.name:
+                print("Cache >> {}".format(self.name))
         else:
             raise CacheNotFoundError(self.path)
         return data
 
-
     def save(self, data):
+        self._dump(data)
+        if self.name:
+            print("Cache << {}".format(self.name))
+
+    def _load(self):
+        with open(self.path, 'rb') as f:
+            data = pickle.load(f)
+        return data
+
+    def _dump(self, data):
         with open(self.path, 'wb') as f:
             pickle.dump(data, f)
 
@@ -36,23 +47,20 @@ class Cacher():
 class H5Cacher(Cacher):
     """ H5 数据缓存器 """
 
-    def __init__(self, path):
-        super().__init__(self, path, ".h5")
+    def __init__(self, path, name=None):
+        super().__init__(self, path, ".h5", name)
 
-    def read(self):
-        if os.path.exists(self.path):
-            data = {}
-            try:
-                h5f = h5py.File(self.path, 'r')
-                for key in h5f.keys():
-                    data[key] = h5f[key][: ]
-            finally:
-                h5f.close()
-        else:
-            raise CacheNotFoundError(self.path)
+    def _load(self):
+        data = {}
+        try:
+            h5f = h5py.File(self.path, 'r')
+            for key in h5f.keys():
+                data[key] = h5f[key][: ]
+        finally:
+            h5f.close()
         return data
 
-    def save(self, data):
+    def _dump(self, data):
         try:
             h5f = h5py.File(self.path, 'w')
             for key in data.keys():
@@ -64,28 +72,24 @@ class H5Cacher(Cacher):
 class JSONCacher(Cacher):
     """ JSON 数据缓存器 """
 
-    def __init__(self, path):
-        super().__init__(self, path, ".json")
+    def __init__(self, path, name=None):
+        super().__init__(self, path, ".json", name)
 
-    def read(self):
-        if os.path.exists(self.path):
-            with open(self.path, 'r', encoding="utf8") as f:
-                data = json.load(f)
-        else:
-            raise CacheNotFoundError(self.path)
+    def _load(self):
+        with open(self.path, 'r', encoding="utf8") as f:
+            data = json.load(f)
         return data
 
-    def save(self, data):
+    def _dump(self, data):
         with open(self.path, 'w', encoding="utf8") as f:
             json.dump(data, f, indent=2)
-
 
 
 class CacheLoader():
     """ 数据装饰器
     获取数据前先检查是否有本地 Cache ，若无则重新获取并保存
     暂时只支持全数据缓存，不支持子数据缓存 """
-    def __init__(self, name, debug=True, type=".dat"):
+    def __init__(self, name, debug=True, type=".pkl"):
         self.name = name
         self.debug = debug
         self.type = type
@@ -106,7 +110,7 @@ class CacheLoader():
     def __call__(self, func):
         def load_data(*args, **kw):
             file_path = self.get_file_path(*args, **kw)
-            cacher = Cacher(file_path, type=self.type)
+            cacher = Cacher(file_path, type=self.type, name=self.name)
 
             if self.debug and os.path.exists(file_path):
                 data = cacher.read()

@@ -1,12 +1,11 @@
+import os
+
 import tensorflow as tf
 
-from config_parser.config import  PATHS
+from config_parser.config import MODEL_DIR
 
-
-MODEL_PATH = PATHS['model_path']
-MODEL_DIR = PATHS['model_dir']
-MODEL_META = PATHS['model_meta']
-
+MODEL_PATH = os.path.join(MODEL_DIR, "model.ckpt")
+MODEL_META = os.path.join(MODEL_DIR, "model.ckpt.meta")
 
 class ModelBase():
     """ 模型基类 """
