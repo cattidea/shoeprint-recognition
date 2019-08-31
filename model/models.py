@@ -295,6 +295,6 @@ class ModelV5(TripletModel):
         return X
 
 
-class Model(ModelV3):
+class Model(ModelV4):
     def __init__(self, config):
         super().__init__(config)

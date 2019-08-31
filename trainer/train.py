@@ -96,11 +96,9 @@ def train(train_config):
                     img_arrays=img_arrays, sess=sess):
 
                     if len(triplets) == 0:
-                        train_costs.append(0)
                         continue
                     elif len(triplets) + len(triplet_cache) <= max_mini_batch_size // 2:
                         triplet_cache.extend(triplets)
-                        train_costs.append(0)
                         continue
                     elif max_mini_batch_size // 2 < len(triplets) + len(triplet_cache) <= max_mini_batch_size:
                         triplets.extend(triplet_cache)
