@@ -1,10 +1,10 @@
 {
   "paths": {
-    "simple_dir": "data/simple_graph/",
+    "simple_dir": "data/simple_pics/",
     "determine_file": "data/txt/训练.txt",
-    "determine_test_file": "data/索引.txt",
+    "determine_test_file": "data/txt/索引.txt",
     "shoeprint_dir": "data/train/train_2/",
-    "shoeprint_test_dir": "data/test/",
+    "shoeprint_test_dir": "data/test/train_2/",
     "model_dir": "data/ckpt/",
     "recorder_path": "data/ckpt/recorder.csv",
     "result_file": "data/result.txt",
@@ -28,6 +28,9 @@
     "dev_test": true
   },
   "test": {
+    "log": false,
+    "plot": false,
+    "separator": "\t"
   },
   "image": {
     "W": 49,

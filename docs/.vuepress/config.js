@@ -33,7 +33,7 @@ module.exports = {
     nav: [{ text: "Home", link: "/" }, { text: "Guide", link: "/guide/" }],
     sidebarDepth: 1,
     sidebar: {
-      "/guide/": ["", "model", "usage"],
+      "/guide/": ["", "io", "model", "usage", "faq"],
       "/": [""]
     },
 

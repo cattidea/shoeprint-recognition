@@ -12,6 +12,9 @@ from data_loader.base import Cacher
 
 RESULT_FILE = PATHS['result_file']
 SIMPLE_EMB_CACHE = PATHS["simple_emb_cache"]
+SEP = TEST_PARAMS["separator"]
+IS_PLOT = TEST_PARAMS["plot"]
+IS_LOG = TEST_PARAMS["log"]
 GLOBAL = {}
 
 
@@ -95,7 +98,7 @@ def test(test_config):
             embeddings_length = len(img_arrays)
             model.init_test_ops("test", scope_length, num_amplify, embeddings_length)
 
-            res, acc = data_test(test_data_map, "test", embeddings, sess, model, log=True, plot=False)
+            res, acc = data_test(test_data_map, "test", embeddings, sess, model, log=IS_LOG, plot=IS_PLOT)
             print(acc)
             print("{:.2f}s".format(time.time() - clock))
 
@@ -103,6 +106,6 @@ def test(test_config):
         for i, item in enumerate(res):
             f.write(test_data_map["test"][i]["name"])
             for dist in item:
-                f.write("\t")
+                f.write(SEP)
                 f.write(str(1 / dist))
             f.write("\n")
