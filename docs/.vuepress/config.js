@@ -1,5 +1,5 @@
 module.exports = {
-  title: "Shoeprint-Recognition",
+  title: "Shoeprint Recognition",
   description: "“恒锐杯”鞋印花纹图像类别判定挑战赛",
   base: "/shoeprint-recognition/",
   head: [["link", { rel: "icon", href: "/logo.svg" }]],
@@ -30,10 +30,10 @@ module.exports = {
 
   // 主题配置
   themeConfig: {
-    nav: [{ text: "Home", link: "/" }, { text: "Guide", link: "/guide/" }],
+    nav: [{ text: "主页", link: "/" }, { text: "指南", link: "/guide/" }],
     sidebarDepth: 1,
     sidebar: {
-      "/guide/": ["", "io", "model", "usage", "faq"],
+      "/guide/": ["", "usage", "io", "model", "faq"],
       "/": [""]
     },
 

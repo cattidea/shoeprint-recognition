@@ -1,4 +1,4 @@
-# Usage
+# 快速开始
 
 ## 环境配置
 
@@ -8,9 +8,9 @@
 pip install -r requirements.txt
 ```
 
-或者逐一进行安装，`tensorflow` 与 `tensorflow-gpu` 存一即可，版本号为 `1.13.1+`
+或者逐一进行安装，`tensorflow` 与 `tensorflow-gpu` 存一即可，版本号为 `^1.13.1`
 
-### 文件配置
+### 文件说明及路径配置
 
 可按照 `config.json` 对文件进行配置，默认配置如下
 
@@ -66,7 +66,7 @@ pip install -r requirements.txt
    -  `base.py` 缓存装饰器，用于生成数据一级 pickle 缓存，以提高数据获取速度
    -  `data_loader.py` 原数据提取器，用于从原数据文件中提取需要的数据，大多数使用了缓存装饰器，其中 `data_import` 使用了二级缓存（h5 和 json）提高读取速度
    -  `image.py` 图片处理模块，主要用于图片的 resize 与扩增
-   -  `batch_loader/` 三元组在线生成器（确实是个生成器）
+   -  `batch_loader.py` 三元组在线生成器（确实是个生成器）
 -  `model/` 模型库
    -  `base.py` 模型基类
    -  `triplet_model.py` 对本问题的衍生类，封装了本问题所需要的大多数方法以及初始化方法
@@ -75,16 +75,50 @@ pip install -r requirements.txt
    -  `train.py` 训练时的主函数文件
 -  `infer/` 测试库，暂未进行模块化封装
    -  `test.py` 测试时的主函数文件
--  `data/cache/cache_loader/` `data_loader/base.py` 默认生成的缓存文件夹，可通过修改 `paths.cache_loader_dir` 进行变更
--  `data/cache/data_set.h5` `data_loader/data_loader.data_import` 默认生成的二级图片缓存，可通过修改 `paths.h5_path` 进行变更
--  `data/cache/indices.json` `data_loader/data_loader.data_import` 默认生成的二级索引缓存，可通过修改 `paths.json_path` 进行变更
--  `data/ckpt/` 模型文件夹，训练时会将模型保存在该文件夹下，测试时会使用该文件夹下的模型，可通过修改 `paths.model_dir` 进行变更
--  `data/simple_pics/` 样本图库文件夹，请训练与测试时将图片存放到该文件夹下，可通过修改 `paths.simple_dir` 进行变更
--  `data/train/train_2/` 训练鞋印图库文件夹，可通过修改 `paths.shoeprint_dir` 进行变更
--  `data/test/test_2/` 测试鞋印图库文件夹，可通过修改 `paths.shoeprint_test_dir` 进行变更
--  `data/txt/训练.txt` 训练待判定范围文本文件，可通过修改 `paths.determine_file` 进行变更
--  `data/txt/索引.txt` 测试待判定范围文本文件，可通过修改 `paths.determine_test_file` 进行变更
--  `result.txt` 测试输出文本文件，可通过修改 `paths.result_file` 进行变更
+-  `data` 数据文件夹
+   -  `cache/` 缓存文件夹
+      -  `cache_loader/` `data_loader/base.py` 默认生成的缓存文件夹，可通过修改 `paths.cache_loader_dir` 进行变更
+      -  `data_set.h5` `data_loader/data_loader.data_import` 默认生成的二级图片缓存，可通过修改 `paths.h5_path` 进行变更
+      -  `indices.json` `data_loader/data_loader.data_import` 默认生成的二级索引缓存，可通过修改 `paths.json_path` 进行变更
+   -  `ckpt/` ==模型文件夹==，训练时会将模型保存在该文件夹下，测试时会使用该文件夹下的模型，可通过修改 `paths.model_dir` 进行变更
+   -  `simple_pics/` ==样本图库文件夹==，请训练与测试时将图片存放到该文件夹下，可通过修改 `paths.simple_dir` 进行变更
+   -  `train/train_2/` ==训练鞋印图库文件夹==，可通过修改 `paths.shoeprint_dir` 进行变更
+   -  `test/test_2/` ==测试鞋印图库文件夹==，可通过修改 `paths.shoeprint_test_dir` 进行变更
+   -  `txt/训练.txt` ==训练待判定范围文本文件==，可通过修改 `paths.determine_file` 进行变更
+   -  `txt/索引.txt` ==测试待判定范围文本文件==，可通过修改 `paths.determine_test_file` 进行变更
+   -  `result.txt` ==测试输出文本文件==，可通过修改 `paths.result_file` 进行变更
+
+::: warning
+
+-  路径分隔符尽量使用 \*nix 风格的 `/` 而不是 Windows 风格的 `\` ，如果一定要使用 `\` ，记得转义为 `\\`
+-  请尽量不要在包含图片的路径中出现中文，否则可能会引发 cv2 无法读取图片的问题
+
+:::
+
+### 其他配置
+
+-  `train`
+   -  `learning_rate` 训练时的学习率，训练过程中可调整（一般初始设为 1e-4 ，逐渐降低到 1e-6）
+   -  `num_epochs` 迭代代数
+   -  `keep_prob` dropout 留存率，训练过程不可调整（由于现在没有使用全连接网络，也就没有使用 dropout ，所以该参数无效）
+   -  `class_per_batch` 在线生成三元组时，每批数据的图片类别数
+   -  `shoe_per_class` 在线生成三元组时，每类图片中挑选的图片数
+   -  `img_per_class` 在线生成三元组时，每张图片的扩增数
+   -  `emb_step` 计算嵌入时每小批数据的样本数
+   -  `save_step` 每训练多少代保存一次参数
+   -  `test_step` 每训练多少代测试一次效果
+   -  `max_to_keep` 模型最大保存次数
+   -  `train_test` 是否使用训练集数据进行测试
+   -  `dev_test` 是否使用开发集数据进行测试
+-  `test`
+   -  `log` 测试时是否打印每个图片的效果
+   -  `plot` 测试时是否显示图片（原图、真实样本、猜测样本）
+   -  `separator` 输入文件中的分隔符
+-  `image`
+   -  `W` 神经网络接收的图片宽度
+   -  `H` 神经网络接收的图片高度
+-  `margin` triplet-loss 间隔大小
+-  `seed` 随机种子
 
 ## 启动
 
