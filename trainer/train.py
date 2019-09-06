@@ -1,17 +1,16 @@
 import os
 import time
+
 import numpy as np
 import tensorflow as tf
 
-
-from config_parser.config import TRAIN_HYPER_PARAMS, SEED, PATHS
+from config_parser.config import PATHS, SEED, TRAIN_HYPER_PARAMS
+from data_loader.batch_loader import BatchAll
+from data_loader.data_loader import data_import, test_data_import
+from data_loader.image import ALL, TRANSPOSE
 from infer.test import data_test
 from model.models import Model
-from data_loader.image import TRANSPOSE, ALL
-from data_loader.data_loader import data_import, test_data_import
-from data_loader.batch_loader import BatchAll
 from trainer.recorder import Recorder
-
 
 RECORDER_PATH = PATHS["recorder_path"]
 
@@ -30,7 +29,8 @@ def train(train_config):
     test_step = TRAIN_HYPER_PARAMS["test_step"]
     train_test = TRAIN_HYPER_PARAMS["train_test"]
     dev_test = TRAIN_HYPER_PARAMS["dev_test"]
-    max_mini_batch_size = class_per_batch * shoe_per_class * (shoe_per_class-1) / 2
+    max_mini_batch_size = class_per_batch * \
+        shoe_per_class * (shoe_per_class-1) / 2
 
     # GPU Config
     config = tf.ConfigProto()
@@ -52,7 +52,8 @@ def train(train_config):
 
     # test data
     if train_test or dev_test:
-        test_img_arrays, test_data_map, _ = test_data_import(amplify=[TRANSPOSE], action_type="train")
+        test_img_arrays, test_data_map, _ = test_data_import(
+            amplify=[TRANSPOSE], action_type="train")
         train_scope_length = len(test_data_map["train"][0]["scope_indices"])
         train_num_amplify = len(test_data_map["train"][0]["indices"])
         dev_scope_length = len(test_data_map["dev"][0]["scope_indices"])
@@ -71,9 +72,11 @@ def train(train_config):
         if train_test or dev_test:
             test_embeddings_length = len(test_img_arrays)
         if train_test:
-            model.init_test_ops("train", train_scope_length, train_num_amplify, test_embeddings_length)
+            model.init_test_ops("train", train_scope_length,
+                                train_num_amplify, test_embeddings_length)
         if dev_test:
-            model.init_test_ops("dev", dev_scope_length, dev_num_amplify, test_embeddings_length)
+            model.init_test_ops("dev", dev_scope_length,
+                                dev_num_amplify, test_embeddings_length)
 
         with tf.Session(graph=graph, config=config) as sess:
             if resume:
@@ -92,9 +95,10 @@ def train(train_config):
                 train_costs = []
                 triplet_cache = []
                 for batch_index, triplets in BatchAll(
-                    model, indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
-                    img_arrays=img_arrays, sess=sess):
+                        model, indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
+                        img_arrays=img_arrays, sess=sess):
 
+                    # 小数据 cache 机制
                     if len(triplets) == 0:
                         continue
                     elif len(triplets) + len(triplet_cache) <= max_mini_batch_size // 2:
@@ -113,7 +117,7 @@ def train(train_config):
                         model.ops["N"]: np.divide(img_arrays[triplet_list[2]], 127.5, dtype=np.float32) - 1,
                         model.ops["is_training"]: True,
                         model.ops["keep_prob"]: keep_prob
-                        })
+                    })
                     temp_cost /= max_mini_batch_size
                     print("{} mini-batch > {}/{} size: {} cost: {} ".format(
                         epoch, batch_index, train_size, mini_batch_size, temp_cost), end="\r")
@@ -127,18 +131,23 @@ def train(train_config):
                 if epoch % test_step == 0:
                     train_acc, dev_acc = "", ""
                     if train_test or dev_test:
-                        test_embeddings = model.compute_embeddings(test_img_arrays, sess=sess)
+                        test_embeddings = model.compute_embeddings(
+                            test_img_arrays, sess=sess)
 
                     if train_test:
-                        _, train_acc = data_test(test_data_map, "train", test_embeddings, sess, model, log=False)
+                        _, train_acc = data_test(
+                            test_data_map, "train", test_embeddings, sess, model, log=False)
                         log_str += " train acc is {:.2%}" .format(train_acc)
                     if dev_test:
-                        _, dev_acc= data_test(test_data_map, "dev", test_embeddings, sess, model, log=False)
+                        _, dev_acc = data_test(
+                            test_data_map, "dev", test_embeddings, sess, model, log=False)
                         log_str += " dev acc is {:.2%}" .format(dev_acc)
 
-                    prec_time_stamp = (time.time() - clock) * ((num_epochs - epoch) // test_step) + clock
+                    prec_time_stamp = (time.time() - clock) * \
+                        ((num_epochs - epoch) // test_step) + clock
                     clock = time.time()
-                    log_str += " >> {} ".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp)))
+                    log_str += " >> {} ".format(time.strftime(
+                        "%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp)))
                     recorder.record_item(epoch, [train_acc, dev_acc])
 
                 if epoch % save_step == 0:

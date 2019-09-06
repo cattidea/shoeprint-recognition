@@ -33,7 +33,7 @@ module.exports = {
     nav: [{ text: "主页", link: "/" }, { text: "指南", link: "/guide/" }],
     sidebarDepth: 1,
     sidebar: {
-      "/guide/": ["", "usage", "io", "model", "faq"],
+      "/guide/": ["", "usage", "io", "model", "faq", "notice"],
       "/": [""]
     },
 

@@ -246,6 +246,7 @@ def conv2(img, kernel):
 
 
 def img_plot(*img_arrays, shape=(H, W)):
+    """ 每张图片 reshape，之后同时并列显示多张图片 """
     img_arrays = [np.reshape(img_array, shape) for img_array in img_arrays]
     img = np.concatenate(img_arrays, axis=1)
     plt.imshow(img, cmap='gray')

@@ -38,6 +38,7 @@ def get_simple_arrays(amplify):
     simple_arrays = []
     types = os.listdir(SIMPLE_DIR)
     index = 0
+    assert types, "样本图库文件夹为空！"
     for i, type_id in enumerate(types):
         print("get_simple_arrays {}/{} ".format(i, len(types)), end='\r')
         type_dir = os.path.join(SIMPLE_DIR, type_id)
@@ -55,7 +56,7 @@ def get_simple_arrays(amplify):
 
 @CacheLoader(name="shoeprint", debug=True)
 def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
-    """ 获取鞋印文件结，将鞋印图片预处理成所需格式追加在 simple_arrays 后，并将数据分类为训练类型、开发类型
+    """ 获取鞋印文件结构，将鞋印图片预处理成所需格式追加在 simple_arrays 后，并将数据分类为训练类型、开发类型
     之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
     所以开发集理应与训练集也在不同的样式中
     ``` python
@@ -85,6 +86,7 @@ def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
     types = os.listdir(SHOEPRINT_DIR) if action_type == "train" else os.listdir(SHOEPRINT_DIR_TEST)
     type_counter = {"train": set(), "dev": set(), "test": set()}
     index = simple_length
+    assert types, "鞋印图库文件夹为空！"
 
     for i, type_id in enumerate(types):
         print("get_shoeprint_arrays {}/{} ".format(i, len(types)), end='\r')

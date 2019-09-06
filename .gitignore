@@ -138,3 +138,6 @@ dmypy.json
 # editor cache
 .vscode/
 .idea/
+
+# others
+/__*

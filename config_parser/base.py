@@ -24,7 +24,8 @@ class Config(dict):
 
 
 class PathConfig(Config):
-    """ 路径配置，初始化时确保所有需要的文件夹已经建立 """
+    """ 路径配置项
+    可以在初始化时确保所有需要的文件夹（以"_dir"结尾的键）已经建立 """
 
     def __init__(self, path=None, config={}):
         super().__init__(path, config)

@@ -1,5 +1,6 @@
 class Recorder():
     """ 训练记录器 """
+
     def __init__(self, path, resume=False, separator=","):
         self.path = path
         self.separator = separator
@@ -28,7 +29,7 @@ class Recorder():
                 self.checkpoint = int(csv_line[0])
             elif tp == 1:
                 self.params[csv_line[0]] = {}
-                for item in csv_line[1: ]:
+                for item in csv_line[1:]:
                     if item == "":
                         continue
                     value = item.split("[")[0]
