@@ -22,6 +22,11 @@
 
 以 Markdown 编写，[Vuepress](https://github.com/vuejs/vuepress) 生成
 
+## 开源协议
+
+-  代码 MIT
+-  文档 [CC 4.0 BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
+
 ## 鸣谢
 
 -  [大连恒锐科技股份有限公司](http://www.everspry.com/)
