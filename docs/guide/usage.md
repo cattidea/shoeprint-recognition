@@ -12,7 +12,7 @@
 pip install -r requirements.txt
 ```
 
-或者逐一进行安装，`tensorflow` 与 `tensorflow-gpu` 存一即可，版本号为 `^1.13.1`
+> 如果有条件，可以安装 `tensorflow-gpu`
 
 ### 文件说明及路径配置
 
