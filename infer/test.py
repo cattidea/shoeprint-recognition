@@ -11,7 +11,7 @@ from data_loader.image import BILATERAL_BLUR, ROTATE, TRANSPOSE, img_plot
 from model.models import Model
 
 RESULT_FILE = PATHS['result_file']
-SIMPLE_EMB_CACHE = PATHS["simple_emb_cache"]
+SAMPLE_EMB_CACHE = PATHS["sample_emb_cache"]
 SEP = TEST_PARAMS["separator"]
 IS_PLOT = TEST_PARAMS["plot"]
 IS_LOG = TEST_PARAMS["log"]
@@ -68,8 +68,8 @@ def test(test_config):
 
     # 加载模型与数据
     model = Model(TRAIN_HYPER_PARAMS)
-    simple_cacher = Cacher(SIMPLE_EMB_CACHE)
-    img_arrays, test_data_map, simple_length = test_data_import(
+    sample_cacher = Cacher(SAMPLE_EMB_CACHE)
+    img_arrays, test_data_map, sample_length = test_data_import(
         amplify=[(TRANSPOSE, BILATERAL_BLUR)], action_type="test")
     GLOBAL["img_arrays"] = img_arrays
 
@@ -94,17 +94,17 @@ def test(test_config):
             model.get_ops_from_graph(graph)
 
             # 计算嵌入
-            if use_cache and os.path.exists(SIMPLE_EMB_CACHE):
+            if use_cache and os.path.exists(SAMPLE_EMB_CACHE):
                 # 如果已经有编码过的样本嵌入则直接读取
-                simple_embs = simple_cacher.read()
+                sample_embs = sample_cacher.read()
                 shoeprint_embs = model.compute_embeddings(
-                    img_arrays[simple_length:], sess=sess)
-                embeddings = np.concatenate((simple_embs, shoeprint_embs))
+                    img_arrays[sample_length:], sess=sess)
+                embeddings = np.concatenate((sample_embs, shoeprint_embs))
                 print("成功读取预编码模板")
             else:
                 embeddings = model.compute_embeddings(img_arrays, sess=sess)
-                simple_embs = embeddings[: simple_length]
-                simple_cacher.save(simple_embs)
+                sample_embs = embeddings[: sample_length]
+                sample_cacher.save(sample_embs)
 
             # 初始化测试计算图
             embeddings_length = len(img_arrays)

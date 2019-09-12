@@ -11,14 +11,14 @@ from data_loader.image import image2array
 H5_PATH = PATHS["h5_path"]
 JSON_PATH = PATHS["json_path"]
 SHOEPRINT_DIR = PATHS["shoeprint_dir"]
-SIMPLE_DIR = PATHS["simple_dir"]
+SAMPLE_DIR = PATHS["sample_dir"]
 SHOEPRINT_DIR_TEST = PATHS["shoeprint_test_dir"]
 DETERMINE_FILE = PATHS["determine_file"]
 DETERMINE_FILE_TEST = PATHS["determine_test_file"]
 
 
-@CacheLoader(name="simple", debug=True)
-def get_simple_arrays(amplify):
+@CacheLoader(name="sample", debug=True)
+def get_sample_arrays(amplify):
     """ 获取样本文件结构，将样本图片预处理成所需格式
     ``` python
     [
@@ -34,29 +34,29 @@ def get_simple_arrays(amplify):
     },
     ```
     """
-    simple_map = {}
-    simple_arrays = []
-    types = os.listdir(SIMPLE_DIR)
+    sample_map = {}
+    sample_arrays = []
+    types = os.listdir(SAMPLE_DIR)
     index = 0
     assert types, "样本图库文件夹为空！"
     for i, type_id in enumerate(types):
-        print("get_simple_arrays {}/{} ".format(i, len(types)), end='\r')
-        type_dir = os.path.join(SIMPLE_DIR, type_id)
+        print("get_sample_arrays {}/{} ".format(i, len(types)), end='\r')
+        type_dir = os.path.join(SAMPLE_DIR, type_id)
         img_path = os.path.join(type_dir, os.listdir(type_dir)[0])
-        simple_map[type_id] = {}
+        sample_map[type_id] = {}
 
         img_array = image2array(img_path, amplify)
 
-        simple_map[type_id]["img_indices"] = [index + j for j in range(len(img_array))]
+        sample_map[type_id]["img_indices"] = [index + j for j in range(len(img_array))]
         index += len(img_array)
-        simple_arrays.extend(img_array)
-    assert len(simple_arrays) == index
-    return simple_arrays, simple_map
+        sample_arrays.extend(img_array)
+    assert len(sample_arrays) == index
+    return sample_arrays, sample_map
 
 
 @CacheLoader(name="shoeprint", debug=True)
-def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
-    """ 获取鞋印文件结构，将鞋印图片预处理成所需格式追加在 simple_arrays 后，并将数据分类为训练类型、开发类型
+def get_shoeprint_arrays(amplify, sample_length, action_type="train"):
+    """ 获取鞋印文件结构，将鞋印图片预处理成所需格式追加在 sample_arrays 后，并将数据分类为训练类型、开发类型
     之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
     所以开发集理应与训练集也在不同的样式中
     ``` python
@@ -85,7 +85,7 @@ def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
     type_map = {}
     types = os.listdir(SHOEPRINT_DIR) if action_type == "train" else os.listdir(SHOEPRINT_DIR_TEST)
     type_counter = {"train": set(), "dev": set(), "test": set()}
-    index = simple_length
+    index = sample_length
     assert types, "鞋印图库文件夹为空！"
 
     for i, type_id in enumerate(types):
@@ -112,7 +112,7 @@ def get_shoeprint_arrays(amplify, simple_length, action_type="train"):
         print("训练数据共 {} 类，开发数据共 {} 类".format(len(type_counter["train"]), len(type_counter["dev"])))
     else:
         print("测试数据共 {} 类".format(len(type_counter["test"])))
-    assert len(shoeprint_arrays) == index - simple_length
+    assert len(shoeprint_arrays) == index - sample_length
     return shoeprint_arrays, shoeprint_map, type_map
 
 
@@ -140,7 +140,7 @@ def get_determine_scope(action_type="train"):
 
 
 @CacheLoader(name="class_indices", debug=True)
-def get_indices(simple_map, shoeprint_map, type_map):
+def get_indices(sample_map, shoeprint_map, type_map):
     """ 将所有 indices 组织在一起
     ``` python
     [
@@ -154,10 +154,10 @@ def get_indices(simple_map, shoeprint_map, type_map):
     ```
     """
     indices = []
-    for i, type_id in enumerate(simple_map):
-        print("get_indices {}/{} ".format(i, len(simple_map)), end='\r')
+    for i, type_id in enumerate(sample_map):
+        print("get_indices {}/{} ".format(i, len(sample_map)), end='\r')
         class_indices = []
-        class_indices.append(simple_map[type_id]["img_indices"])
+        class_indices.append(sample_map[type_id]["img_indices"])
         if type_id in type_map:
             for pos_name in type_map[type_id]:
                 if shoeprint_map[pos_name]["set_type"] == "train":
@@ -188,13 +188,13 @@ def test_data_import(amplify=[], action_type="test"):
     """
 
     determine_scope = get_determine_scope(action_type=action_type)
-    simple_arrays, simple_map = get_simple_arrays(amplify=[])
+    sample_arrays, sample_map = get_sample_arrays(amplify=[])
     shoeprint_arrays, shoeprint_map, _ = get_shoeprint_arrays(
-        amplify=amplify, simple_length=len(simple_arrays), action_type=action_type)
-    img_arrays = np.concatenate((simple_arrays, shoeprint_arrays))
+        amplify=amplify, sample_length=len(sample_arrays), action_type=action_type)
+    img_arrays = np.concatenate((sample_arrays, shoeprint_arrays))
     test_data_map = {"train": [], "dev": [], "test": []}
 
-    print("simple {} shoeprint {} ".format(len(simple_arrays), len(shoeprint_arrays)))
+    print("sample {} shoeprint {} ".format(len(sample_arrays), len(shoeprint_arrays)))
 
     scope_length = len(determine_scope[list(determine_scope.keys())[0]])
     imgs_num = len(determine_scope)
@@ -216,9 +216,9 @@ def test_data_import(amplify=[], action_type="test"):
         item["scope_indices"] = []
         item["label"] = determine_scope[origin_name].index(type_id)
         for j in range(scope_length):
-            item["scope_indices"].append(simple_map[determine_scope[origin_name][j]]["img_indices"][0])
+            item["scope_indices"].append(sample_map[determine_scope[origin_name][j]]["img_indices"][0])
         test_data_map[set_type].append(item)
-    return img_arrays, test_data_map, len(simple_arrays)
+    return img_arrays, test_data_map, len(sample_arrays)
 
 
 def data_import(amplify=[]):
@@ -233,11 +233,11 @@ def data_import(amplify=[]):
     if not os.path.exists(H5_PATH) or not os.path.exists(JSON_PATH):
         print("未发现处理好的数据文件，正在处理...")
         determine_scope = get_determine_scope(action_type="train")
-        simple_arrays, simple_map = get_simple_arrays(amplify)
+        sample_arrays, sample_map = get_sample_arrays(amplify)
         shoeprint_arrays, shoeprint_map, type_map = get_shoeprint_arrays(
-            amplify, simple_length=len(simple_arrays), action_type="train")
-        img_arrays = np.concatenate((simple_arrays, shoeprint_arrays))
-        indices = get_indices(simple_map, shoeprint_map, type_map)
+            amplify, sample_length=len(sample_arrays), action_type="train")
+        img_arrays = np.concatenate((sample_arrays, shoeprint_arrays))
+        indices = get_indices(sample_map, shoeprint_map, type_map)
 
         data_set["img_arrays"] = img_arrays
         data_set["indices"] = indices

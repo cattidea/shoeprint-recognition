@@ -26,7 +26,7 @@ pip install -r requirements.txt
 │   │   ├── data_set.h5
 │   │   └── indices.json
 │   ├── ckpt
-│   ├── simple_pics              （训练、测试必配置）
+│   ├── sample_pics              （训练、测试必配置）
 │   │   ├── C151224000005
 │   │   ├── C151224000012
 │   │   └── ...
@@ -85,7 +85,7 @@ pip install -r requirements.txt
       -  `data_set.h5` `data_loader/data_loader.data_import` 默认生成的二级图片缓存，可通过修改 `paths.h5_path` 进行变更
       -  `indices.json` `data_loader/data_loader.data_import` 默认生成的二级索引缓存，可通过修改 `paths.json_path` 进行变更
    -  `ckpt/` ==模型文件夹==，训练时会将模型保存在该文件夹下，测试时会使用该文件夹下的模型，可通过修改 `paths.model_dir` 进行变更
-   -  `simple_pics/` ==样本图库文件夹==，请训练与测试时将图片存放到该文件夹下，可通过修改 `paths.simple_dir` 进行变更
+   -  `sample_pics/` ==样本图库文件夹==，请训练与测试时将图片存放到该文件夹下，可通过修改 `paths.sample_dir` 进行变更
    -  `train/train_2/` ==训练鞋印图库文件夹==，可通过修改 `paths.shoeprint_dir` 进行变更
    -  `test/test_2/` ==测试鞋印图库文件夹==，可通过修改 `paths.shoeprint_test_dir` 进行变更
    -  `txt/训练.txt` ==训练待判定范围文本文件==，可通过修改 `paths.determine_file` 进行变更
