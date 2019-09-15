@@ -4,7 +4,7 @@ import h5py
 import random
 import numpy as np
 
-from config_parser.config import PATHS
+from config_parser.config import PATHS, DEBUG
 from data_loader.base import CacheLoader
 from data_loader.image import image2array
 
@@ -17,7 +17,7 @@ DETERMINE_FILE = PATHS["determine_file"]
 DETERMINE_FILE_TEST = PATHS["determine_test_file"]
 
 
-@CacheLoader(name="sample", debug=True)
+@CacheLoader(name="sample", debug=DEBUG)
 def get_sample_arrays(amplify):
     """ 获取样本文件结构，将样本图片预处理成所需格式
     ``` python
@@ -54,7 +54,7 @@ def get_sample_arrays(amplify):
     return sample_arrays, sample_map
 
 
-@CacheLoader(name="shoeprint", debug=True)
+@CacheLoader(name="shoeprint", debug=DEBUG)
 def get_shoeprint_arrays(amplify, sample_length, action_type="train"):
     """ 获取鞋印文件结构，将鞋印图片预处理成所需格式追加在 sample_arrays 后，并将数据分类为训练类型、开发类型
     之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
@@ -116,7 +116,7 @@ def get_shoeprint_arrays(amplify, sample_length, action_type="train"):
     return shoeprint_arrays, shoeprint_map, type_map
 
 
-@CacheLoader(name="determine", debug=True)
+@CacheLoader(name="determine", debug=DEBUG)
 def get_determine_scope(action_type="train"):
     """ 读取待判定范围文件，并构造成字典型
     ``` python
@@ -139,7 +139,7 @@ def get_determine_scope(action_type="train"):
     return determine_scope
 
 
-@CacheLoader(name="class_indices", debug=True)
+@CacheLoader(name="class_indices", debug=DEBUG)
 def get_indices(sample_map, shoeprint_map, type_map):
     """ 将所有 indices 组织在一起
     ``` python
@@ -166,7 +166,7 @@ def get_indices(sample_map, shoeprint_map, type_map):
     return indices
 
 
-@CacheLoader(name="test_data_set", debug=True)
+@CacheLoader(name="test_data_set", debug=DEBUG)
 def test_data_import(amplify=[], action_type="test"):
     """ 构造测试数据
     ``` python

@@ -37,5 +37,6 @@
     "H": 129
   },
   "margin": 0.2,
-  "seed": 1127
+  "seed": 1127,
+  "debug": true
 }

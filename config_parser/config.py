@@ -18,3 +18,4 @@ MODEL_DIR = PATHS['model_dir']
 
 MARGIN = CONFIG["margin"]
 SEED = CONFIG["seed"]
+DEBUG = CONFIG["debug"]

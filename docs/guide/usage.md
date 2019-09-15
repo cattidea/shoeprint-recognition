@@ -124,6 +124,7 @@ pip install -r requirements.txt
    -  `H` 神经网络接收的图片高度
 -  `margin` triplet-loss 间隔大小
 -  `seed` 随机种子
+-  `debug` 是否使用 Cache
 
 ## 启动
 

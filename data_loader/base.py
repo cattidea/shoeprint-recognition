@@ -55,7 +55,7 @@ class H5Cacher(Cacher):
         try:
             h5f = h5py.File(self.path, 'r')
             for key in h5f.keys():
-                data[key] = h5f[key][: ]
+                data[key] = h5f[key][:]
         finally:
             h5f.close()
         return data
@@ -89,6 +89,7 @@ class CacheLoader():
     """ 数据装饰器
     获取数据前先检查是否有本地 Cache ，若无则重新获取并保存
     暂时只支持全数据缓存，不支持子数据缓存 """
+
     def __init__(self, name, debug=True, type=".pkl"):
         self.name = name
         self.debug = debug
@@ -106,7 +107,6 @@ class CacheLoader():
         file_path = os.path.join(CACHE_LOADER_DIR, file_name)
         return file_path
 
-
     def __call__(self, func):
         def load_data(*args, **kw):
             file_path = self.get_file_path(*args, **kw)
@@ -116,7 +116,6 @@ class CacheLoader():
                 data = cacher.read()
             else:
                 data = func(*args, **kw)
-                if self.debug:
-                    cacher.save(data)
+                cacher.save(data)
             return data
         return load_data
