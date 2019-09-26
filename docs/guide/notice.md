@@ -24,7 +24,7 @@
 
 ## 开源协议
 
--  代码 MIT
+-  代码 [MIT](https://github.com/SigureMo/shoeprint-recognition/blob/master/LICENSE)
 -  文档 [CC 4.0 BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
 
 ## 鸣谢
