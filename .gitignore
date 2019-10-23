@@ -141,3 +141,4 @@ dmypy.json
 
 # others
 /__*
+.DS_Store
