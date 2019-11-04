@@ -1,6 +1,6 @@
 {
   "name": "shoeprint-recognition",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "“恒锐杯”鞋印花纹图像类别判定挑战赛",
   "main": "main.py",
   "scripts": {

@@ -4,21 +4,6 @@
 
 <bilibili-player avid=66645569></bilibili-player>
 
-::: warning 文档内容与提交版本的差异
-
-提交版本中有部分 bug ，已在新版本中修复，所以本文档少许描述会与视频以及提交版本略有不同，请以新版本代码为准
-
--  修复内容
-
-   -  修复 `requirements.txt` 内容
-   -  修复 错误词汇 `simple` 为 `sample`
-
--  新增功能
-
-   -  增加 可控参数 `debug` ，在配置文件中配置，若为 `False` 则不读取 `Cache`
-
-:::
-
 ## 环境配置
 
 ### 安装依赖
