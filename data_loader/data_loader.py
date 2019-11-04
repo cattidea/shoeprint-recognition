@@ -83,7 +83,8 @@ def get_shoeprint_arrays(amplify, sample_length, action_type="train"):
     shoeprint_map = {}
     shoeprint_arrays = []
     type_map = {}
-    types = os.listdir(SHOEPRINT_DIR) if action_type == "train" else os.listdir(SHOEPRINT_DIR_TEST)
+    shoeprint_base_dir = SHOEPRINT_DIR if action_type == "train" else SHOEPRINT_DIR_TEST
+    types = os.listdir(shoeprint_base_dir)
     type_counter = {"train": set(), "dev": set(), "test": set()}
     index = sample_length
     assert types, "鞋印图库文件夹为空！"
@@ -94,7 +95,7 @@ def get_shoeprint_arrays(amplify, sample_length, action_type="train"):
             set_type = "train" if random.random() < 0.95 else "dev"
         else:
             set_type = "test"
-        type_dir = os.path.join(SHOEPRINT_DIR, type_id)
+        type_dir = os.path.join(shoeprint_base_dir, type_id)
         type_map[type_id] = []
         for filename in os.listdir(type_dir):
             img_path = os.path.join(type_dir, filename)
