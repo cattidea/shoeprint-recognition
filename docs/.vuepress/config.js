@@ -29,12 +29,18 @@ module.exports = {
   ],
 
   // 主题配置
+  theme: "reco",
   themeConfig: {
     nav: [{ text: "主页", link: "/" }, { text: "指南", link: "/guide/" }],
     sidebarDepth: 1,
     sidebar: {
       "/guide/": ["", "usage", "io", "model", "faq", "notice"],
       "/": [""]
+    },
+
+    algolia: {
+      apiKey: "4447290f7c449f572a53081c232ed21e",
+      indexName: "siguremo_shoeprint-recognition"
     },
 
     serviceWorker: {

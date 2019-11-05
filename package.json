@@ -1,6 +1,6 @@
 {
   "name": "shoeprint-recognition",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "“恒锐杯”鞋印花纹图像类别判定挑战赛",
   "main": "main.py",
   "scripts": {
@@ -37,6 +37,7 @@
     "@vuepress/plugin-back-to-top": "^1.0.2",
     "markdown-it-mark": "^2.0.0",
     "moment": "^2.24.0",
-    "vuepress": "^1.0.2"
+    "vuepress": "^1.0.2",
+    "vuepress-theme-reco": "^1.1.1"
   }
 }
