@@ -25,7 +25,9 @@ module.exports = {
     // 自动返回顶部
     "@vuepress/back-to-top",
     // 页面滚动时自动激活侧边栏链接
-    "@vuepress/active-header-links"
+    "@vuepress/active-header-links",
+    // 流程图插件
+    "flowchart"
   ],
 
   // 主题配置

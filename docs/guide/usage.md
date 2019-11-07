@@ -100,6 +100,10 @@ pip install -r requirements.txt
 
 :::
 
+### 程序流程图
+
+![flowchart{create:creately}](../Images/flowchart.png)
+
 ### 其他配置
 
 -  `train`
