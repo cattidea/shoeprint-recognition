@@ -1,5 +1,26 @@
 #!/usr/bin/env sh
 
+ACCESS_TOKEN=$1
+USERNAME=SigureMo                   # 你的用户名
+REPO=shoeprint-recognition          # 如果不指定，将发布在 <username>.github.io
+BRANCH=gh-pages                     # 如果不指定，将发布在 master 分支
+CNAME=""                            # 你想发布到的域名
+
+if [ $ACCESS_TOKEN ]
+then TOKEN_PREFIX="${ACCESS_TOKEN}@"
+else TOKEN_PREFIX=""
+fi
+
+if [ $BRANCH ]
+then BRANCH_POSTFIX=":${BRANCH}"
+else BRANCH_POSTFIX=""
+fi
+
+if [ $REPO ]
+then REMOTE=https://${TOKEN_PREFIX}github.com/${USERNAME}/${REPO}.git
+else REMOTE=https://${TOKEN_PREFIX}github.com/${USERNAME}/${USERNAME}.github.io.git
+fi
+
 # 确保脚本抛出遇到的错误
 set -e
 
@@ -10,18 +31,17 @@ npm run docs:build
 cd docs/.vuepress/dist
 
 # 如果是发布到自定义域名
-# echo 'www.example.com' > CNAME
+if [ $CNAME ]
+then echo $CNAME > CNAME
+fi
 
+# 初始化仓库并提交发布
 git init
+git config user.name "GitHub Actions"
+git config user.email "support@github.com"
 git add -A
-# git commit -m 'deploy'
 time=$(date "+%Y-%m-%d %H:%M:%S")
-git commit -m "redeploy @${time}"
-
-# 如果发布到 https://<USERNAME>.github.io
-# git push -f git@github.com:<USERNAME>/<USERNAME>.github.io.git master
-
-# 如果发布到 https://<USERNAME>.github.io/<REPO>
-git push -f git@github.com:SigureMo/shoeprint-recognition.git master:gh-pages
+git commit -m "rebuild @${time}"
+git push -f $REMOTE master${BRANCH_POSTFIX}
 
 cd -
