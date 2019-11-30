@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 ACCESS_TOKEN=$1
-USERNAME=SigureMo                   # 你的用户名
+USERNAME=zsync                      # 你的用户名
 REPO=shoeprint-recognition          # 如果不指定，将发布在 <username>.github.io
 BRANCH=gh-pages                     # 如果不指定，将发布在 master 分支
 CNAME=""                            # 你想发布到的域名

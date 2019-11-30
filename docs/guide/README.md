@@ -16,6 +16,10 @@
 
 > 在 triplet loss 的实现过程中踩了很多很多坑，起初使用离线生成的三元组进行训练，结果训练集很容易过拟合，在开发集上的表现就是什么都没有学到，准确率接近于瞎猜（1/50），后来采用了**在线生成**方才解决该问题，但是当前准确率依然不高（比较好的模型大概稳定在 45%）
 
+## 竞赛结果
+
+很不理想的结果，EER 达到了 0.2821，连要求的 0.25 都没达到，但是，我觉得如果在某些条件允许的情况下（比如给我个 3GB 的显卡就行，现在每个 mini-batch **最多**只有 24 个训练样本），该方案仍有较大的提升空间
+
 ## 开发环境
 
 主体功能已在以下环境下测试~
@@ -23,9 +27,10 @@
 1. 主 coding 环境
 
    -  CPU: Intel 4200U
-   -  GPU: NVIDIA GTX950M
-      -  CUDA: 9.0
    -  Memory: 8GB
+   -  GPU: NVIDIA GTX950M
+      -  Mermory: 2GB
+      -  CUDA: 9.0
    -  OS: Windows10
    -  Python: 3.6.7
       -  tensorflow-gpu 1.13.1
@@ -34,9 +39,10 @@
 2. 主 training 环境
 
    -  CPU: Intel 7500
-   -  GPU: NVIDIA GTX1050
-      -  CUDA: 10.0
    -  Memory: 8GB
+   -  GPU: NVIDIA GTX1050
+      -  Mermory: 2GB
+      -  CUDA: 10.0
    -  OS: Windows10
    -  Python: 3.6.7
       -  tensorflow-gpu 1.14.0

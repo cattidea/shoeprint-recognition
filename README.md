@@ -1,9 +1,9 @@
-<p align="center"><a href="https://github.com/SigureMo/shoeprint-recognition/" target="_blank" rel="noopener noreferrer"><img width="200" src="./docs/.vuepress/public/logo.svg" alt="SPR.logo"></a></p>
+<p align="center"><a href="https://github.com/zsync/shoeprint-recognition/" target="_blank" rel="noopener noreferrer"><img width="200" src="./docs/.vuepress/public/logo.svg" alt="SPR.logo"></a></p>
 
 <p align="center">
     <img alt="python 3.6.7" src="https://img.shields.io/badge/python-3.6.7-green?style=flat-square&logo=python">
     <img alt="TensorFlow" src="https://img.shields.io/badge/TensorFlow-1.13.2-orange?style=flat-square&logo=tensorflow">
-    <a href="https://github.com/SigureMo/shoeprint-recognition/" target="_blank"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-SigureMo-black?style=flat-square&logo=github"></a>
+    <a href="https://github.com/zsync/shoeprint-recognition/" target="_blank"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-zsync-black?style=flat-square&logo=github"></a>
     <a href="https://www.sigure.xyz/shoeprint-recognition/" target="_blank"><img alt="Read the Docs" src="https://img.shields.io/badge/docs-GetStarted-red?style=flat-square&logo=read-the-docs"></a>
     <a href="LICENSE"><img alt="LICENSE" src="https://img.shields.io/badge/License-MIT-orange?style=flat-square"></a>
 </p>
