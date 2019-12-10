@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shoeprint Recognition</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="description" content="“恒锐杯”鞋印花纹图像类别判定挑战赛">
+  <link rel="stylesheet" href="//unpkg.com/docsify/themes/vue.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css"/>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    window.$docsify = {
+      loadSidebar: true,
+      subMaxLevel: 2,
+      name: "Shoeprint Recognition",
+      repo: "https://github.com/zsync/shoeprint-recognition",
+      coverpage: true,
+      onlyCover: true,
+      themeColor: '#000080'
+    }
+  </script>
+  <script>
+    if (typeof navigator.serviceWorker !== 'undefined') {
+      navigator.serviceWorker.register('sw.js')
+    }
+  </script>
+  <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
+  <script src="//unpkg.com/docsify/lib/plugins/zoom-image.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-katex@latest/dist/docsify-katex.js"></script>
+</body>
+</html>

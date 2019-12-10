@@ -20,7 +20,7 @@
 
 ## 关于本文档
 
-以 Markdown 编写，[Vuepress](https://github.com/vuejs/vuepress) 生成
+以 Markdown 编写，[Docsify](https://docsify.js.org/) 驱动
 
 ## 开源协议
 

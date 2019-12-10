@@ -2,7 +2,7 @@
 
 ## 视频速览
 
-<bilibili-player avid=66645569></bilibili-player>
+<iframe src="//player.bilibili.com/player.html?high_quality=1&aid=66645569" allowfullscreen="allowfullscreen" width="100%" height="500" scrolling="no" frameborder="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts"></iframe>
 
 ## 环境配置
 
@@ -12,13 +12,13 @@
 pip install -r requirements.txt
 ```
 
-> 如果有条件，可以安装 `tensorflow-gpu`
+?> 如果有条件，可以安装 `tensorflow-gpu`
 
 ### 文件说明及路径配置
 
 可按照 `config.json` 对文件进行配置，默认配置如下
 
-```{8,13,19,25,26,27}
+```
 .
 ├── data
 │   ├── cache
@@ -84,25 +84,22 @@ pip install -r requirements.txt
       -  `cache_loader/` `data_loader/base.py` 默认生成的缓存文件夹，可通过修改 `paths.cache_loader_dir` 进行变更
       -  `data_set.h5` `data_loader/data_loader.data_import` 默认生成的二级图片缓存，可通过修改 `paths.h5_path` 进行变更
       -  `indices.json` `data_loader/data_loader.data_import` 默认生成的二级索引缓存，可通过修改 `paths.json_path` 进行变更
-   -  `ckpt/` ==模型文件夹==，训练时会将模型保存在该文件夹下，测试时会使用该文件夹下的模型，可通过修改 `paths.model_dir` 进行变更
-   -  `sample_pics/` ==样本图库文件夹==，请训练与测试时将图片存放到该文件夹下，可通过修改 `paths.sample_dir` 进行变更
-   -  `train/train_2/` ==训练鞋印图库文件夹==，可通过修改 `paths.shoeprint_dir` 进行变更
-   -  `test/test_2/` ==测试鞋印图库文件夹==，可通过修改 `paths.shoeprint_test_dir` 进行变更
-   -  `txt/训练.txt` ==训练待判定范围文本文件==，可通过修改 `paths.determine_file` 进行变更
-   -  `txt/索引.txt` ==测试待判定范围文本文件==，可通过修改 `paths.determine_test_file` 进行变更
-   -  `result.txt` ==测试输出文本文件==，可通过修改 `paths.result_file` 进行变更
+   -  `ckpt/` **模型文件夹**，训练时会将模型保存在该文件夹下，测试时会使用该文件夹下的模型，可通过修改 `paths.model_dir` 进行变更
+   -  `sample_pics/` **样本图库文件夹**，请训练与测试时将图片存放到该文件夹下，可通过修改 `paths.sample_dir` 进行变更
+   -  `train/train_2/` **训练鞋印图库文件夹**，可通过修改 `paths.shoeprint_dir` 进行变更
+   -  `test/test_2/` **测试鞋印图库文件夹**，可通过修改 `paths.shoeprint_test_dir` 进行变更
+   -  `txt/训练.txt` **训练待判定范围文本文件**，可通过修改 `paths.determine_file` 进行变更
+   -  `txt/索引.txt` **测试待判定范围文本文件**，可通过修改 `paths.determine_test_file` 进行变更
+   -  `result.txt` **测试输出文本文件**，可通过修改 `paths.result_file` 进行变更
 
-::: warning
-
--  路径分隔符尽量使用 \*nix 风格的 `/` 而不是 Windows 风格的 `\` ，如果一定要使用 `\` ，记得转义为 `\\`
--  文件夹路径建议以分隔符（`\`）结尾
--  请尽量不要在包含图片的路径中出现中文，否则可能会引发 cv2 无法读取图片的问题
-
-:::
+> TIP
+> -  路径分隔符尽量使用 \*nix 风格的 `/` 而不是 Windows 风格的 `\` ，如果一定要使用 `\` ，记得转义为 `\\`
+> -  文件夹路径建议以分隔符（`\`）结尾
+> -  请尽量不要在包含图片的路径中出现中文，否则可能会引发 cv2 无法读取图片的问题
 
 ### 程序流程图
 
-![flowchart{create:creately}](../Images/flowchart.png)
+![flowchart{create:creately}](_media/flowchart.png)
 
 ### 其他配置
 
@@ -153,3 +150,9 @@ python main.py test
 
 -  `--no-gpu` 不使用 GPU 计算嵌入
 -  `--use-cache` 使用之前已经计算过的嵌入缓存
+
+### 文档实时预览
+
+```bash
+python main.py docs
+```
