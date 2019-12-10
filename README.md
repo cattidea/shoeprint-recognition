@@ -1,4 +1,4 @@
-<p align="center"><a href="https://github.com/zsync/shoeprint-recognition/" target="_blank" rel="noopener noreferrer"><img width="200" src="./docs/.vuepress/public/logo.svg" alt="SPR.logo"></a></p>
+<p align="center"><a href="https://github.com/zsync/shoeprint-recognition/" target="_blank" rel="noopener noreferrer"><img width="200" src="./docs/_media/logo.svg" alt="SPR.logo"></a></p>
 
 <p align="center">
     <img alt="python 3.6.7" src="https://img.shields.io/badge/python-3.6.7-green?style=flat-square&logo=python">

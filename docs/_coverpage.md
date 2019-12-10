@@ -6,3 +6,5 @@
 
 [GitHub](https://github.com/zsync/shoeprint-recognition/)
 [Getting Started](guide)
+
+![color](#ffffff)
