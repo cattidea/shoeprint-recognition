@@ -48,7 +48,7 @@ class H5Cacher(Cacher):
     """ H5 数据缓存器 """
 
     def __init__(self, path, name=None):
-        super().__init__(self, path, ".h5", name)
+        super().__init__(path, ".h5", name)
 
     def _load(self):
         data = {}
@@ -73,7 +73,7 @@ class JSONCacher(Cacher):
     """ JSON 数据缓存器 """
 
     def __init__(self, path, name=None):
-        super().__init__(self, path, ".json", name)
+        super().__init__(path, ".json", name)
 
     def _load(self):
         with open(self.path, 'r', encoding="utf8") as f:

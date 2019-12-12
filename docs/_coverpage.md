@@ -1,4 +1,4 @@
-![logo](_media/logo.svg)
+![logo](_media/logo.svg ':size=250')
 
 # Shoeprint Recognition
 
