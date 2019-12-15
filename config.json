@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "shoeprint-recognition",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "“恒锐杯”鞋印花纹图像类别判定挑战赛",
     "keywords": [
       "python",
@@ -13,9 +13,7 @@
     "license": "MIT"
   },
   "docs": {
-    "base": "/shoeprint-recognition/",
     "docs_dir": "docs/",
-    "host": "localhost",
     "port": 8080
   },
   "paths": {

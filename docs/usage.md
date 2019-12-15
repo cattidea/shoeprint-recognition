@@ -59,7 +59,7 @@ pip install -r requirements.txt
 
 下面对各个文件进行说明
 
--  `docs/` 文档文件夹，使用 Markdown 书写， Vuepress 生成
+-  `docs/` 文档文件夹，使用 Markdown 书写， Docsify 驱动
 -  `scripts/` 部分脚本，仅起到某些命令的简化作用，对本项目无实质性的帮助
 -  `config.json` 配置文件，用于配置文件路径、训练超参数、图片参数等
 -  `main.py` 入口函数，用于解析参数
@@ -77,6 +77,7 @@ pip install -r requirements.txt
    -  `models.py` 模型类文件，每个类对应一个模型
 -  `trainer/` 训练库，暂未进行模块化封装
    -  `train.py` 训练时的主函数文件
+   -  `recorder.py` 训练记录器，记录训练断点与模型性能
 -  `infer/` 测试库，暂未进行模块化封装
    -  `test.py` 测试时的主函数文件
 -  `data` 数据文件夹
@@ -94,12 +95,14 @@ pip install -r requirements.txt
 
 > TIP
 > -  路径分隔符尽量使用 \*nix 风格的 `/` 而不是 Windows 风格的 `\` ，如果一定要使用 `\` ，记得转义为 `\\`
-> -  文件夹路径建议以分隔符（`\`）结尾
+> -  文件夹路径建议以分隔符（`/`）结尾
 > -  请尽量不要在包含图片的路径中出现中文，否则可能会引发 cv2 无法读取图片的问题
 
 ### 程序流程图
 
 ![flowchart{create:creately}](_media/flowchart.png)
+
+?> 只是大致表征了各模块之间的关系，并不是程序的真实逻辑关系
 
 ### 其他配置
 
@@ -125,7 +128,7 @@ pip install -r requirements.txt
    -  `H` 神经网络接收的图片高度
 -  `margin` triplet-loss 间隔大小
 -  `seed` 随机种子
--  `debug` 是否使用 Cache
+-  `debug` 是否启用 CacheLoader
 
 ## 启动
 
