@@ -45,7 +45,7 @@ def train(train_config):
     recorder.upload_params(TRAIN_HYPER_PARAMS)
 
     # train data
-    data_set = data_import(amplify=ALL)
+    data_set = data_import(augment=ALL)
     img_arrays = data_set["img_arrays"]
     indices = data_set["indices"]
     train_size = len(indices)
@@ -53,11 +53,11 @@ def train(train_config):
     # test data
     if train_test or dev_test:
         test_img_arrays, test_data_map, _ = test_data_import(
-            amplify=[TRANSPOSE], action_type="train")
+            augment=[TRANSPOSE], action_type="train")
         train_scope_length = len(test_data_map["train"][0]["scope_indices"])
-        train_num_amplify = len(test_data_map["train"][0]["indices"])
+        train_num_augment = len(test_data_map["train"][0]["indices"])
         dev_scope_length = len(test_data_map["dev"][0]["scope_indices"])
-        dev_num_amplify = len(test_data_map["dev"][0]["indices"])
+        dev_num_augment = len(test_data_map["dev"][0]["indices"])
 
     graph = tf.Graph()
     with graph.as_default():
@@ -73,10 +73,10 @@ def train(train_config):
             test_embeddings_length = len(test_img_arrays)
         if train_test:
             model.init_test_ops("train", train_scope_length,
-                                train_num_amplify, test_embeddings_length)
+                                train_num_augment, test_embeddings_length)
         if dev_test:
             model.init_test_ops("dev", dev_scope_length,
-                                dev_num_amplify, test_embeddings_length)
+                                dev_num_augment, test_embeddings_length)
 
         with tf.Session(graph=graph, config=config) as sess:
             if resume:

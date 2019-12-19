@@ -70,11 +70,11 @@ def test(test_config):
     model = Model(TRAIN_HYPER_PARAMS)
     sample_cacher = Cacher(SAMPLE_EMB_CACHE)
     img_arrays, test_data_map, sample_length = test_data_import(
-        amplify=[(TRANSPOSE, BILATERAL_BLUR)], action_type="test")
+        augment=[(TRANSPOSE, BILATERAL_BLUR)], action_type="test")
     GLOBAL["img_arrays"] = img_arrays
 
     scope_length = len(test_data_map["test"][0]["scope_indices"])
-    num_amplify = len(test_data_map["test"][0]["indices"])
+    num_augment = len(test_data_map["test"][0]["indices"])
 
     config = tf.ConfigProto()
     if GPU:
@@ -109,7 +109,7 @@ def test(test_config):
             # 初始化测试计算图
             embeddings_length = len(img_arrays)
             model.init_test_ops("test", scope_length,
-                                num_amplify, embeddings_length)
+                                num_augment, embeddings_length)
 
             # 测试数据
             res, acc = data_test(

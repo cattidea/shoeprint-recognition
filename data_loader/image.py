@@ -13,30 +13,30 @@ W = IMAGE_PARAMS["W"]
 H = IMAGE_PARAMS["H"]
 
 
-TRANSPOSE = lambda x: _transpose_amplify_cv(x)
-ROTATE = lambda x: _rotate_amplify_cv(x, 10, -10)
-OFFSET = lambda x: _offest_amplify_cv(x, (40, 0), (-40, 0), (0, 40), (0, -40))
-NOISE = lambda x: _noise_amplify(x, density_noise=0.02)
-RANDOM_BLOCK = lambda x: _random_block_amplify(x, num_block=30, block_size=(40, 40))
-AREA_BLOCK = lambda x: _area_block_amplify(x)
-DEFORMATION = lambda x: _deformation_amplify(x, k=500, kernel_size=(225, 225), sigma=15)
-MEDIAN_BLUR = lambda x: _median_blur_amplify(x)
-GAUSSIAN_BLUR = lambda x: _gaussian_blur_amplify(x)
-BILATERAL_BLUR = lambda x: _bilateral_blur_amplify(x)
-AVERAGE_BLUR = lambda x: _average_blur_amplify(x)
+TRANSPOSE = lambda x: _transpose_augment_cv(x)
+ROTATE = lambda x: _rotate_augment_cv(x, 10, -10)
+OFFSET = lambda x: _offest_augment_cv(x, (40, 0), (-40, 0), (0, 40), (0, -40))
+NOISE = lambda x: _noise_augment(x, density_noise=0.02)
+RANDOM_BLOCK = lambda x: _random_block_augment(x, num_block=30, block_size=(40, 40))
+AREA_BLOCK = lambda x: _area_block_augment(x)
+DEFORMATION = lambda x: _deformation_augment(x, k=500, kernel_size=(225, 225), sigma=15)
+MEDIAN_BLUR = lambda x: _median_blur_augment(x)
+GAUSSIAN_BLUR = lambda x: _gaussian_blur_augment(x)
+BILATERAL_BLUR = lambda x: _bilateral_blur_augment(x)
+AVERAGE_BLUR = lambda x: _average_blur_augment(x)
 ALL = [TRANSPOSE, (ROTATE, OFFSET, NOISE, RANDOM_BLOCK, AREA_BLOCK, DEFORMATION)]
 
 
-def image2array(img_path, amplify=ALL):
+def image2array(img_path, augment=ALL):
     """ 将图像转化为向量，可扩增
-    amplify: list<method or tuple<method>> """
+    augment: list<method or tuple<method>> """
 
     arrays = []
     origin = _read_img_cv(img_path)
     img_arrs = [origin]
 
-    if amplify:
-        for mets in amplify:
+    if augment:
+        for mets in augment:
             if isinstance(mets, tuple):
                 img_arrs_tmp = []
                 for method in mets:
@@ -72,7 +72,7 @@ def _resize_cv(img_arr, shape, interpolation=cv2.INTER_LINEAR):
     return cv2.resize(img_arr, shape, interpolation=cv2.INTER_LINEAR)
 
 
-def amplify(func):
+def augment(func):
     """ 扩增装饰器，在原图片列表的基础上进行扩增 """
     def new_func(ori_img_arrs, *args, **kw):
         img_arrs = []
@@ -82,50 +82,50 @@ def amplify(func):
     return new_func
 
 
-@amplify
-def _transpose_amplify(img_arr):
+@augment
+def _transpose_augment(img_arr):
     """ 对称扩增 """
     img = Image.fromarray(img_arr, "L")
     return [np.asarray(img.transpose(Image.FLIP_LEFT_RIGHT))]
 
 
-@amplify
-def _transpose_amplify_cv(img_arr):
+@augment
+def _transpose_augment_cv(img_arr):
     """ 对称扩增 opencv 版 """
     return [cv2.flip(img_arr, 1)]
 
 
-@amplify
-def _rotate_amplify(img_arr, *angles):
+@augment
+def _rotate_augment(img_arr, *angles):
     """ 旋转扩增，可同时扩增多个角度 """
     img = Image.fromarray(img_arr, "L")
     return [np.asarray(img.rotate(angle)) for angle in angles]
 
 
-@amplify
-def _rotate_amplify_cv(img_arr, *angles):
+@augment
+def _rotate_augment_cv(img_arr, *angles):
     """ 旋转扩增 opencv 版 """
     h, w = img_arr.shape
     center = (w//2, h//2)
     return [cv2.warpAffine(img_arr, cv2.getRotationMatrix2D(center, angle, 1), (w, h)) for angle in angles]
 
 
-@amplify
-def _offest_amplify(img_arr, *offsets):
+@augment
+def _offest_augment(img_arr, *offsets):
     """ 平移扩增 """
     img = Image.fromarray(img_arr, "L")
     return [np.asarray(ImageChops.offset(img, off_x, off_y)) for off_x, off_y in offsets]
 
 
-@amplify
-def _offest_amplify_cv(img_arr, *offsets):
+@augment
+def _offest_augment_cv(img_arr, *offsets):
     """ 平移扩增 opencv 版 """
     h, w = img_arr.shape
     return [cv2.warpAffine(img_arr, np.float32([[1,0,off_x],[0,1,off_y]]), (w, h)) for off_x, off_y in offsets]
 
 
-@amplify
-def _noise_amplify(img_arr, density_noise):
+@augment
+def _noise_augment(img_arr, density_noise):
     """ 椒盐噪声扩增 """
     h, w = img_arr.shape
     noise_arr = img_arr.copy()
@@ -138,8 +138,8 @@ def _noise_amplify(img_arr, density_noise):
     return [noise_arr]
 
 
-@amplify
-def _random_block_amplify(img_arr, num_block, block_size):
+@augment
+def _random_block_augment(img_arr, num_block, block_size):
     """ 随机遮挡扩增 """
     h, w = img_arr.shape
     block_arr = img_arr.copy()
@@ -149,8 +149,8 @@ def _random_block_amplify(img_arr, num_block, block_size):
     return [block_arr]
 
 
-@amplify
-def _area_block_amplify(img_arr):
+@augment
+def _area_block_augment(img_arr):
     """ 区域遮挡扩增 """
     h, _ = img_arr.shape
     block_arr = img_arr.copy()
@@ -160,8 +160,8 @@ def _area_block_amplify(img_arr):
     return [block_arr]
 
 
-@amplify
-def _deformation_amplify(img_arr, k=500, kernel_size=(225, 225), sigma=15):
+@augment
+def _deformation_augment(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     """ 弹性形变扩增 """
     h, w = img_arr.shape
     matrix_h = np.random.uniform(low=-1.0*k, high=1.0*k, size=(h, w))
@@ -178,8 +178,8 @@ def _deformation_amplify(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     return [defor_arr]
 
 
-@amplify
-def _deformation_amplify_v2(img_arr, k=500, kernel_size=(225, 225), sigma=15):
+@augment
+def _deformation_augment_v2(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     """ 弹性形变扩增 v2 ，暂不可用 """
     h, w = img_arr.shape
     matrix_h = np.random.uniform(low=-1.0*k, high=1.0*k, size=(h, w))
@@ -200,26 +200,26 @@ def _deformation_amplify_v2(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     return [defor_arr]
 
 
-@amplify
-def _median_blur_amplify(img_arr):
+@augment
+def _median_blur_augment(img_arr):
     """ 中值滤波扩增 """
     return [cv2.medianBlur(img_arr, 5)]
 
 
-@amplify
-def _gaussian_blur_amplify(img_arr):
+@augment
+def _gaussian_blur_augment(img_arr):
     """ 高斯滤波扩增 """
     return [cv2.GaussianBlur(img_arr, (7, 7), 0)]
 
 
-@amplify
-def _bilateral_blur_amplify(img_arr):
+@augment
+def _bilateral_blur_augment(img_arr):
     """ 双边滤波扩增 """
     return [cv2.bilateralFilter(img_arr, 40, 75, 75)]
 
 
-@amplify
-def _average_blur_amplify(img_arr):
+@augment
+def _average_blur_augment(img_arr):
     """ 均值滤波扩增 """
     return [cv2.blur(img_arr,(5, 5))]
 

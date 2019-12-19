@@ -18,7 +18,7 @@ DETERMINE_FILE_TEST = PATHS["determine_test_file"]
 
 
 @CacheLoader(name="sample", debug=DEBUG)
-def get_sample_arrays(amplify):
+def get_sample_arrays(augment):
     """ 获取样本文件结构，将样本图片预处理成所需格式
     ``` python
     [
@@ -45,7 +45,7 @@ def get_sample_arrays(amplify):
         img_path = os.path.join(type_dir, os.listdir(type_dir)[0])
         sample_map[type_id] = {}
 
-        img_array = image2array(img_path, amplify)
+        img_array = image2array(img_path, augment)
 
         sample_map[type_id]["img_indices"] = [index + j for j in range(len(img_array))]
         index += len(img_array)
@@ -55,7 +55,7 @@ def get_sample_arrays(amplify):
 
 
 @CacheLoader(name="shoeprint", debug=DEBUG)
-def get_shoeprint_arrays(amplify, sample_length, action_type="train"):
+def get_shoeprint_arrays(augment, sample_length, action_type="train"):
     """ 获取鞋印文件结构，将鞋印图片预处理成所需格式追加在 sample_arrays 后，并将数据分类为训练类型、开发类型
     之所以不整体打乱，是因为验证集与训练集、开发集是与验证集在不同的样式中，
     所以开发集理应与训练集也在不同的样式中
@@ -99,7 +99,7 @@ def get_shoeprint_arrays(amplify, sample_length, action_type="train"):
         type_map[type_id] = []
         for filename in os.listdir(type_dir):
             img_path = os.path.join(type_dir, filename)
-            img_array = image2array(img_path, amplify)
+            img_array = image2array(img_path, augment)
             shoeprint_map[filename] = {}
             shoeprint_map[filename]["type_id"] = type_id
             shoeprint_map[filename]["img_indices"] = [index + j for j in range(len(img_array))]
@@ -168,7 +168,7 @@ def get_indices(sample_map, shoeprint_map, type_map):
 
 
 @CacheLoader(name="test_data_set", debug=DEBUG)
-def test_data_import(amplify=[], action_type="test"):
+def test_data_import(augment=[], action_type="test"):
     """ 构造测试数据
     ``` python
     img_arrays
@@ -189,9 +189,9 @@ def test_data_import(amplify=[], action_type="test"):
     """
 
     determine_scope = get_determine_scope(action_type=action_type)
-    sample_arrays, sample_map = get_sample_arrays(amplify=[])
+    sample_arrays, sample_map = get_sample_arrays(augment=[])
     shoeprint_arrays, shoeprint_map, _ = get_shoeprint_arrays(
-        amplify=amplify, sample_length=len(sample_arrays), action_type=action_type)
+        augment=augment, sample_length=len(sample_arrays), action_type=action_type)
     img_arrays = np.concatenate((sample_arrays, shoeprint_arrays))
     test_data_map = {"train": [], "dev": [], "test": []}
 
@@ -222,7 +222,7 @@ def test_data_import(amplify=[], action_type="test"):
     return img_arrays, test_data_map, len(sample_arrays)
 
 
-def data_import(amplify=[]):
+def data_import(augment=[]):
     """ 导入数据集， 分为训练集、开发集
     ``` h5
     {
@@ -234,9 +234,9 @@ def data_import(amplify=[]):
     if not os.path.exists(H5_PATH) or not os.path.exists(JSON_PATH):
         print("未发现处理好的数据文件，正在处理...")
         determine_scope = get_determine_scope(action_type="train")
-        sample_arrays, sample_map = get_sample_arrays(amplify)
+        sample_arrays, sample_map = get_sample_arrays(augment)
         shoeprint_arrays, shoeprint_map, type_map = get_shoeprint_arrays(
-            amplify, sample_length=len(sample_arrays), action_type="train")
+            augment, sample_length=len(sample_arrays), action_type="train")
         img_arrays = np.concatenate((sample_arrays, shoeprint_arrays))
         indices = get_indices(sample_map, shoeprint_map, type_map)
 

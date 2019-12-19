@@ -78,13 +78,13 @@ class TripletModel(ModelBase):
             "learning_rate": learning_rate
         }
 
-    def init_test_ops(self, name, scope_length, num_amplify, embeddings_length):
+    def init_test_ops(self, name, scope_length, num_augment, embeddings_length):
         """ 初始化测试计算图
         可根据 name 创建多个测试计算图
         """
         embeddings_shape = (embeddings_length, *self.ops["A_emb"].shape[1:])
         origin_indices = tf.placeholder(
-            dtype=tf.int32, shape=(num_amplify, ), name="origin_indices")
+            dtype=tf.int32, shape=(num_augment, ), name="origin_indices")
         scope_indices = tf.placeholder(dtype=tf.int32, shape=(
             scope_length, ), name="scope_indices")
         embeddings_op = tf.placeholder(
@@ -93,7 +93,7 @@ class TripletModel(ModelBase):
         origin_embeddings = tf.gather(embeddings_op, origin_indices)
         scope_embeddings = tf.gather(embeddings_op, scope_indices)
         scope_embeddings = tf.stack(
-            [scope_embeddings for _ in range(num_amplify)], axis=1)
+            [scope_embeddings for _ in range(num_augment)], axis=1)
         res_op = tf.reduce_min(tf.reduce_sum(tf.square(tf.subtract(
             origin_embeddings, scope_embeddings)), axis=-1), axis=-1)
         min_index_op = tf.argmin(res_op)
