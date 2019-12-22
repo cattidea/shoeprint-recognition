@@ -14,7 +14,7 @@
 
 ## 网络流程图
 
-?> 默认使用 ModelV4 （Nnet_v1），修改训练模型需要修改 `model.Model` 的父类，修改测试模型需要修改 `model_dir` （默认 `data/ckpt/`）相关配置
+?> 默认使用 ModelV4 （`???`），修改训练模型需要修改 `model.Model` 的父类，修改测试模型需要修改 `model_dir` （默认 `data/ckpt/`）相关配置
 
 ### Inception
 

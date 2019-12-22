@@ -2,6 +2,7 @@
 * [:clapper: 快速开始](usage)
 * [:twisted_rightwards_arrows: 输入与输出](io)
 * [:sparkles: 模型](model)
+* [:pencil2: 已知问题](known-issues)
 * [⚗️ 一些实验性的想法](ideas)
 * [:question: FAQ](faq)
 * [:loud_sound: 告示板](notice)
