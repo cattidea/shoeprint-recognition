@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "shoeprint-recognition",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "“恒锐杯”鞋印花纹图像类别判定挑战赛",
     "keywords": [
       "python",
@@ -38,9 +38,9 @@
     "shoe_per_class": 4,
     "img_per_shoe": 6,
     "emb_step": 64,
-    "save_step": 1,
+    "save_step": 10,
     "test_step": 50,
-    "max_to_keep": 5,
+    "max_to_keep": 1,
     "train_test": true,
     "dev_test": true
   },

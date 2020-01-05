@@ -1,12 +1,13 @@
-from config_parser.base import Config, PathConfig
+from config_parser.parser import new_config
 
 _CONFIG_PATH = "config.json"
-CONFIG = Config(_CONFIG_PATH)
-PATHS = CONFIG.sub_config("paths", cls=PathConfig)
-TRAIN_HYPER_PARAMS = CONFIG.sub_config("train")
-IMAGE_PARAMS = CONFIG.sub_config("image")
-TEST_PARAMS = CONFIG.sub_config("test")
-DOCS = CONFIG.sub_config("docs")
+CONFIG = new_config(_CONFIG_PATH)
+PATHS = CONFIG.paths
+PATHS.init_path()
+TRAIN_HYPER_PARAMS = CONFIG.train
+IMAGE_PARAMS = CONFIG.image
+TEST_PARAMS = CONFIG.test
+DOCS = CONFIG.docs
 
 IH = IMAGE_PARAMS["H"]
 IW = IMAGE_PARAMS["W"]
