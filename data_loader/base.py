@@ -41,7 +41,7 @@ class Cacher():
 
     def _dump(self, data):
         with open(self.path, 'wb') as f:
-            pickle.dump(data, f)
+            pickle.dump(data, f, protocol = 4)
 
 
 class H5Cacher(Cacher):
