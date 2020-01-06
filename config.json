@@ -28,7 +28,8 @@
     "cache_loader_dir": "data/cache/cache_loader/",
     "h5_path": "data/cache/data_set.h5",
     "json_path": "data/cache/indices.json",
-    "sample_emb_cache": "data/ckpt/sample_emb.pkl"
+    "sample_emb_cache": "data/ckpt/sample_emb.pkl",
+    "deformation_lib": "libs/libdefor.so"
   },
   "train": {
     "learning_rate": 1e-4,
@@ -45,13 +46,13 @@
     "dev_test": true
   },
   "test": {
-    "log": false,
+    "log": true,
     "plot": false,
     "separator": "\t"
   },
   "image": {
-    "W": 49,
-    "H": 129
+    "W": 97,
+    "H": 257
   },
   "margin": 0.2,
   "seed": 1127,

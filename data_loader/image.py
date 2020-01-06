@@ -1,4 +1,5 @@
 import os
+import ctypes
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,11 +7,17 @@ from cv2 import cv2
 from PIL import Image, ImageChops
 
 
-from config_parser.config import IMAGE_PARAMS
+from config_parser.config import IMAGE_PARAMS, CONFIG
 
 
 W = IMAGE_PARAMS["W"]
 H = IMAGE_PARAMS["H"]
+
+if os.path.exists(CONFIG.paths.deformation_lib):
+    HAS_DEFORMATION_LIB = True
+else:
+    HAS_DEFORMATION_LIB = False
+    print("[WARNING] 未发现编译好的弹性形变扩增动态链接库，将使用 Python 方法进行扩增")
 
 
 TRANSPOSE = lambda x: _transpose_augment_cv(x)
@@ -55,6 +62,7 @@ def image2array(img_path, augment=ALL):
 def _read_img(img_path):
     """ 读取图片 """
     return np.array(Image.open(img_path).convert('L'), dtype=np.uint8)
+
 
 def _read_img_cv(img_path):
     """ 读取图片 opencv 版 """
@@ -121,7 +129,7 @@ def _offest_augment(img_arr, *offsets):
 def _offest_augment_cv(img_arr, *offsets):
     """ 平移扩增 opencv 版 """
     h, w = img_arr.shape
-    return [cv2.warpAffine(img_arr, np.float32([[1,0,off_x],[0,1,off_y]]), (w, h)) for off_x, off_y in offsets]
+    return [cv2.warpAffine(img_arr, np.float32([[1, 0, off_x], [0, 1, off_y]]), (w, h)) for off_x, off_y in offsets]
 
 
 @augment
@@ -129,8 +137,8 @@ def _noise_augment(img_arr, density_noise):
     """ 椒盐噪声扩增 """
     h, w = img_arr.shape
     noise_arr = img_arr.copy()
-    noise_white_mask = np.random.rand(h,w) < density_noise
-    noise_black_mask = np.random.rand(h,w) > density_noise
+    noise_white_mask = np.random.rand(h, w) < density_noise
+    noise_black_mask = np.random.rand(h, w) > density_noise
     noise_white_mask = noise_white_mask.astype(np.uint8) * 255
     noise_black_mask = noise_black_mask.astype(np.uint8) * 255
     noise_arr |= noise_white_mask
@@ -143,7 +151,8 @@ def _random_block_augment(img_arr, num_block, block_size):
     """ 随机遮挡扩增 """
     h, w = img_arr.shape
     block_arr = img_arr.copy()
-    thumbnail_mask = np.random.randint(0, num_block, ((h//block_size[0], w//block_size[1]))) > 1
+    thumbnail_mask = np.random.randint(
+        0, num_block, ((h//block_size[0], w//block_size[1]))) > 1
     block_mask = _resize_cv(thumbnail_mask.astype(np.uint8), (w, h)) * 255
     block_arr &= block_mask
     return [block_arr]
@@ -169,12 +178,24 @@ def _deformation_augment(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     matrix_h = cv2.GaussianBlur(matrix_h, kernel_size, sigma).astype(np.int32)
     matrix_v = cv2.GaussianBlur(matrix_v, kernel_size, sigma).astype(np.int32)
     defor_arr = np.zeros((h, w), dtype=np.uint8)
-    for i in range(h):
-        for j in range(w):
-            new_i = i + int(matrix_v[i][j])
-            new_j = j + int(matrix_h[i][j])
-            if new_i in range(h) and new_j in range(w):
-                defor_arr[new_i][new_j] = img_arr[i][j]
+    if HAS_DEFORMATION_LIB:
+        ll = ctypes.cdll.LoadLibrary
+        lib = ll(CONFIG.paths.deformation_lib)
+        defor_arr_ptr = defor_arr.ctypes.data_as(ctypes.c_char_p)
+        img_arr_ptr = img_arr.ctypes.data_as(ctypes.c_char_p)
+        matrix_h_ptr = ctypes.cast(
+            matrix_h.ctypes.data, ctypes.POINTER(ctypes.c_int))
+        matrix_v_ptr = ctypes.cast(
+            matrix_v.ctypes.data, ctypes.POINTER(ctypes.c_int))
+        lib.deformation_change_uchar_matrix(
+            defor_arr_ptr, img_arr_ptr, matrix_h_ptr, matrix_v_ptr, h, w)
+    else:
+        for i in range(h):
+            for j in range(w):
+                new_i = i + int(matrix_v[i][j])
+                new_j = j + int(matrix_h[i][j])
+                if new_i in range(h) and new_j in range(w):
+                    defor_arr[new_i][new_j] = img_arr[i][j]
     return [defor_arr]
 
 
@@ -186,15 +207,18 @@ def _deformation_augment_v2(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     matrix_v = np.random.uniform(low=-1.0*k, high=1.0*k, size=(h, w))
     matrix_h = cv2.GaussianBlur(matrix_h, kernel_size, sigma).astype(np.int32)
     matrix_v = cv2.GaussianBlur(matrix_v, kernel_size, sigma).astype(np.int32)
-    matrix_x = np.concatenate([np.arange(0, h).reshape((h, 1)) for _ in range(w)], axis=1)
-    matrix_y = np.concatenate([np.arange(0, w).reshape((1, w)) for _ in range(h)], axis=0)
+    matrix_x = np.concatenate([np.arange(0, h).reshape((h, 1))
+                               for _ in range(w)], axis=1)
+    matrix_y = np.concatenate([np.arange(0, w).reshape((1, w))
+                               for _ in range(h)], axis=0)
     matrix_x += matrix_v
     matrix_y += matrix_h
     matrix_x = np.where(matrix_x > 0, matrix_x, 0)
     matrix_x = np.where(matrix_x < h, matrix_x, h)
     matrix_y = np.where(matrix_y > 0, matrix_y, 0)
     matrix_y = np.where(matrix_y < w, matrix_y, w)
-    img_triplet = np.stack([matrix_x, matrix_y, img_arr], axis=-1).reshape((w*h, 3))
+    img_triplet = np.stack([matrix_x, matrix_y, img_arr],
+                           axis=-1).reshape((w*h, 3))
     img_triplet = np.array(sorted(img_triplet, key=lambda t: t[0]*10000+t[1]))
     defor_arr = img_triplet.reshape((h, w, 3))[:, :, 2].astype(np.uint8)
     return [defor_arr]
@@ -221,7 +245,7 @@ def _bilateral_blur_augment(img_arr):
 @augment
 def _average_blur_augment(img_arr):
     """ 均值滤波扩增 """
-    return [cv2.blur(img_arr,(5, 5))]
+    return [cv2.blur(img_arr, (5, 5))]
 
 
 def conv2(img, kernel):

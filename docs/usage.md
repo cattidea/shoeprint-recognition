@@ -130,6 +130,14 @@ pip install -r requirements.txt
 -  `seed` 随机种子
 -  `debug` 是否启用 CacheLoader
 
+## 编译链接库
+
+``` bash
+g++ libs\src\deformation.cpp -fPIC -shared -o libs/libdefor.so
+```
+
+由于训练时使用了弹性形变扩增，暂时未找到在 Python 下的高效扩增方式，故使用 C++ 加速遍历过程
+
 ## 启动
 
 ### 训练
