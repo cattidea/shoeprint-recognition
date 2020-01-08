@@ -4,7 +4,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from config_parser.config import PATHS, SEED, TRAIN_HYPER_PARAMS
+from config_parser.config import PATHS, SEED, TRAIN_HYPER_PARAMS, GPU
 from data_loader.batch_loader import BatchAll
 from data_loader.data_loader import data_import, test_data_import
 from data_loader.image import ALL, TRANSPOSE
@@ -15,11 +15,9 @@ from trainer.recorder import Recorder
 RECORDER_PATH = PATHS["recorder_path"]
 
 
-def train(train_config):
+def train():
     """ 训练 """
-    resume = train_config["resume"]
-    GPU = train_config["use_GPU"]
-
+    resume = TRAIN_HYPER_PARAMS["resume"]
     num_epochs = TRAIN_HYPER_PARAMS["num_epochs"]
     keep_prob = TRAIN_HYPER_PARAMS["keep_prob"]
     class_per_batch = TRAIN_HYPER_PARAMS["class_per_batch"]
@@ -34,9 +32,10 @@ def train(train_config):
 
     # GPU Config
     config = tf.ConfigProto()
-    if GPU:
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    if GPU.enable:
+        config.gpu_options.per_process_gpu_memory_fraction = GPU.memory_fraction
         config.gpu_options.allow_growth = True
+        os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join(map(lambda x: str(x), GPU.devices))
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 

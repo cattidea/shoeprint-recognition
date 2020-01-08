@@ -1,5 +1,7 @@
 import argparse
 
+from config_parser.config import CONFIG
+
 if __name__ == "__main__":
     """ 主函数，解析参数并启动 """
     parser = argparse.ArgumentParser(description='shoeprint recognition')
@@ -13,20 +15,22 @@ if __name__ == "__main__":
 
     train_config = {
         "resume": args.resume,
-        "use_GPU": not args.no_gpu,
     }
 
     test_config = {
-        "use_GPU": not args.no_gpu,
         "use_cache": args.use_cache,
     }
 
+    CONFIG.train.resume = args.resume or CONFIG.train.resume
+    CONFIG.test.use_cache = args.use_cache or CONFIG.test.use_cache
+    CONFIG.gpu.enable = not args.no_gpu or not CONFIG.gpu.enable
+
     if args.action == "train":
         from trainer.train import train
-        train(train_config)
+        train()
     elif args.action == "test":
         from infer.test import test
-        test(test_config)
+        test()
     elif args.action == "docs":
         from docs import docs_dev
         docs_dev()

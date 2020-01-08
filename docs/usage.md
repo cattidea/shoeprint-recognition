@@ -133,7 +133,7 @@ pip install -r requirements.txt
 ## 编译链接库
 
 ``` bash
-g++ libs\src\deformation.cpp -fPIC -shared -o libs/libdefor.so
+g++ libs/src/deformation.cpp -fPIC -shared -o lib/libdefor.so
 ```
 
 由于训练时使用了弹性形变扩增，暂时未找到在 Python 下的高效扩增方式，故使用 C++ 加速遍历过程

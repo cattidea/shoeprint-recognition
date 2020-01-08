@@ -4,7 +4,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from config_parser.config import PATHS, TEST_PARAMS, TRAIN_HYPER_PARAMS
+from config_parser.config import PATHS, TEST_PARAMS, TRAIN_HYPER_PARAMS, GPU
 from data_loader.base import Cacher
 from data_loader.data_loader import test_data_import
 from data_loader.image import BILATERAL_BLUR, ROTATE, TRANSPOSE, img_plot
@@ -61,10 +61,9 @@ def data_test(test_data_map, set_type, embeddings, sess, model, log=False, plot=
     return results, cnt/total
 
 
-def test(test_config):
+def test():
     """ 测试主函数 """
-    GPU = test_config["use_GPU"]
-    use_cache = test_config["use_cache"]
+    use_cache = TEST_PARAMS["use_cache"]
 
     # 加载模型与数据
     model = Model(TRAIN_HYPER_PARAMS)
@@ -76,10 +75,12 @@ def test(test_config):
     scope_length = len(test_data_map["test"][0]["scope_indices"])
     num_augment = len(test_data_map["test"][0]["indices"])
 
+    # GPU Config
     config = tf.ConfigProto()
-    if GPU:
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    if GPU.enable:
+        config.gpu_options.per_process_gpu_memory_fraction = GPU.memory_fraction
         config.gpu_options.allow_growth = True
+        os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join(map(lambda x: str(x), GPU.devices))
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
