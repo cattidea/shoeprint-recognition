@@ -1,17 +1,4 @@
 {
-  "info": {
-    "name": "shoeprint-recognition",
-    "version": "1.0.4",
-    "description": "“恒锐杯”鞋印花纹图像类别判定挑战赛",
-    "keywords": [
-      "python",
-      "tensorflow",
-      "deeplearning",
-      "shoeprint"
-    ],
-    "author": "SigureMo",
-    "license": "MIT"
-  },
   "docs": {
     "docs_dir": "docs/",
     "port": 8080

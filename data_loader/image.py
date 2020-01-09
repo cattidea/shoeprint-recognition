@@ -1,24 +1,21 @@
 import os
-import ctypes
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from cv2 import cv2
 from PIL import Image, ImageChops
 
+from config_parser.config import CONFIG, IMAGE_PARAMS
 
-from config_parser.config import IMAGE_PARAMS, CONFIG
+try:
+    import deformation
+    HAS_DEFORMATION_LIB = True
+except ModuleNotFoundError:
+    HAS_DEFORMATION_LIB = False
 
 
 W = IMAGE_PARAMS["W"]
 H = IMAGE_PARAMS["H"]
-
-if os.path.exists(CONFIG.paths.deformation_lib):
-    HAS_DEFORMATION_LIB = True
-else:
-    HAS_DEFORMATION_LIB = False
-    print("[WARNING] 未发现编译好的弹性形变扩增动态链接库，将使用 Python 方法进行扩增")
-
 
 TRANSPOSE = lambda x: _transpose_augment_cv(x)
 ROTATE = lambda x: _rotate_augment_cv(x, 10, -10)
@@ -178,17 +175,9 @@ def _deformation_augment(img_arr, k=500, kernel_size=(225, 225), sigma=15):
     matrix_h = cv2.GaussianBlur(matrix_h, kernel_size, sigma).astype(np.int32)
     matrix_v = cv2.GaussianBlur(matrix_v, kernel_size, sigma).astype(np.int32)
     defor_arr = np.zeros((h, w), dtype=np.uint8)
+
     if HAS_DEFORMATION_LIB:
-        ll = ctypes.cdll.LoadLibrary
-        lib = ll(CONFIG.paths.deformation_lib)
-        defor_arr_ptr = defor_arr.ctypes.data_as(ctypes.c_char_p)
-        img_arr_ptr = img_arr.ctypes.data_as(ctypes.c_char_p)
-        matrix_h_ptr = ctypes.cast(
-            matrix_h.ctypes.data, ctypes.POINTER(ctypes.c_int))
-        matrix_v_ptr = ctypes.cast(
-            matrix_v.ctypes.data, ctypes.POINTER(ctypes.c_int))
-        lib.deformation_change_uchar_matrix(
-            defor_arr_ptr, img_arr_ptr, matrix_h_ptr, matrix_v_ptr, h, w)
+        deformation.deformation_change_matrix(defor_arr, img_arr, matrix_h ,matrix_v)
     else:
         for i in range(h):
             for j in range(w):

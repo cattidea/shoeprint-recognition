@@ -14,6 +14,14 @@ pip install -r requirements.txt
 
 ?> 如果有条件，可以安装 `tensorflow-gpu`
 
+### 编译链接库
+
+``` bash
+python setup.py build_ext -i
+```
+
+由于训练时使用了弹性形变扩增，暂时未找到在 Python 下的高效扩增方式，故使用 Cython 加速遍历过程
+
 ### 文件说明及路径配置
 
 可按照 `config.json` 对文件进行配置，默认配置如下
@@ -129,14 +137,6 @@ pip install -r requirements.txt
 -  `margin` triplet-loss 间隔大小
 -  `seed` 随机种子
 -  `debug` 是否启用 CacheLoader
-
-## 编译链接库
-
-``` bash
-g++ libs/src/deformation.cpp -fPIC -shared -o lib/libdefor.so
-```
-
-由于训练时使用了弹性形变扩增，暂时未找到在 Python 下的高效扩增方式，故使用 C++ 加速遍历过程
 
 ## 启动
 
