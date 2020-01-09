@@ -394,23 +394,25 @@ class ModelV6(TripletModel):
                              pool_size=3, strides=2, padding="same", is_training=is_training)
 
         # Dense L3
-        X = dense_block(X, scope="DENSE_BLOCK_3a", nb_layers=16,
+        X = dense_block(X, scope="DENSE_BLOCK_3a", nb_layers=8,
                         growth_rate=8, is_training=is_training)
+        X = dense_block(X, scope="DENSE_BLOCK_3b", nb_layers=4,
+                        growth_rate=16, is_training=is_training)
         X = transition_layer(X, scope="TRANSITION_LAYER_3", compression=0.5,
                              pool_size=3, strides=2, padding="same", is_training=is_training)
 
         # Dense L4
         X = dense_block(X, scope="DENSE_BLOCK_4a", nb_layers=16,
                         growth_rate=16, is_training=is_training)
-        X = dense_block(X, scope="DENSE_BLOCK_4b", nb_layers=16,
-                        growth_rate=16, is_training=is_training)
+        X = dense_block(X, scope="DENSE_BLOCK_4b", nb_layers=8,
+                        growth_rate=32, is_training=is_training)
         X = transition_layer(X, scope="TRANSITION_LAYER_4", compression=0.5,
                              pool_size=3, strides=2, padding="same", is_training=is_training)
 
         # Dense L5
-        X = dense_block(X, scope="DENSE_BLOCK_5a", nb_layers=8,
+        X = dense_block(X, scope="DENSE_BLOCK_5a", nb_layers=16,
                         growth_rate=32, is_training=is_training)
-        X = dense_block(X, scope="DENSE_BLOCK_5b", nb_layers=8,
+        X = dense_block(X, scope="DENSE_BLOCK_5b", nb_layers=16,
                         growth_rate=32, is_training=is_training)
         X = transition_layer(X, scope="TRANSITION_LAYER_5", compression=0.5,
                              pool_size=3, strides=2, padding="same", is_training=is_training)

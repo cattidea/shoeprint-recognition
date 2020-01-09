@@ -162,16 +162,10 @@ def dense_block(input, scope, nb_layers=12, growth_rate=16, is_training=False):
     """
     for i in range(nb_layers):
         local_scope = "{}_DENSE_BLOCK_{:02}".format(scope, i)
-        # X = tf.layers.batch_normalization(
-        #     input, training=is_training, name=local_scope+"_BN", reuse=tf.AUTO_REUSE)
-        # X = tf.nn.relu(X)
-        # X = tf.layers.conv2d(inputs=X, filters=growth_rate, kernel_size=3, strides=1, padding='same',
-        #                      kernel_initializer=tf.random_normal_initializer(stddev=0.01), name=local_scope+"_CONV", reuse=tf.AUTO_REUSE)
         X = bottleneck_layer(input, scope=local_scope, growth_rate=growth_rate, is_training=is_training)
         if i != 0:
             X = tf.concat([X, input], axis=-1)
         input = X
-    print(X.shape)
     return X
 
 
@@ -187,13 +181,11 @@ def bottleneck_layer(input, scope, growth_rate, is_training=False):
     X = tf.nn.relu(X)
     X = tf.layers.conv2d(inputs=X, filters=4*growth_rate, kernel_size=1, strides=1, padding='same',
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01), name=scope+"_CONV_1", reuse=tf.AUTO_REUSE)
-    # x = tf.nn.dropout(x, rate=dropout_rate, training=self.training)
     X = tf.layers.batch_normalization(
             X, training=is_training, name=scope+"_BN2", reuse=tf.AUTO_REUSE)
     X = tf.nn.relu(X)
     X = tf.layers.conv2d(inputs=X, filters=growth_rate, kernel_size=3, strides=1, padding='same',
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01), name=scope+"_CONV_3", reuse=tf.AUTO_REUSE)
-    # x = tf.nn.dropout(x, rate=dropout_rate, training=self.training)
     return X
 
 
@@ -209,5 +201,4 @@ def transition_layer(input, scope, compression=0.25, pool_size=2, strides=2, pad
     X = tf.layers.conv2d(inputs=X, filters=out_channels, kernel_size=1, strides=1, padding='same',
                          kernel_initializer=tf.random_normal_initializer(stddev=0.01), name=scope+"_CONV", reuse=tf.AUTO_REUSE)
     X = tf.layers.average_pooling2d(inputs=X, pool_size=pool_size, strides=strides, padding=padding)
-    print(X.shape)
     return X

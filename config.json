@@ -15,8 +15,7 @@
     "cache_loader_dir": "data/cache/cache_loader/",
     "h5_path": "data/cache/data_set.h5",
     "json_path": "data/cache/indices.json",
-    "sample_emb_cache": "data/ckpt/sample_emb.pkl",
-    "deformation_lib": "libs/libdefor.so"
+    "sample_emb_cache": "data/ckpt/sample_emb.pkl"
   },
   "train": {
     "resume": false,
@@ -40,8 +39,8 @@
     "separator": "\t"
   },
   "image": {
-    "W": 97,
-    "H": 257
+    "W": 49,
+    "H": 129
   },
   "gpu": {
     "enable": true,

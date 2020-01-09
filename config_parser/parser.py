@@ -10,6 +10,14 @@ class Config(dict):
 
     def __init__(self, **kw):
         super().__init__(**kw)
+        for key, value in self.items():
+            if isinstance(value, dict):
+                self[key] = Config(**value)
+
+    def __setitem__(self, key, value):
+        if isinstance(value, dict):
+            value = Config(**value)
+        super().__setitem__(key, value)
 
     def __getattr__(self, key):
         try:
@@ -17,12 +25,6 @@ class Config(dict):
         except KeyError:
             raise AttributeError(
                 r"'Config' object has no attribute '%s'" % key)
-
-    def __getitem__(self, key):
-        value = super().__getitem__(key)
-        if isinstance(value, dict):
-            return Config(**value)
-        return value
 
     def __setattr__(self, key, value):
         self[key] = value
