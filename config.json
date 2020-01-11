@@ -39,8 +39,8 @@
     "separator": "\t"
   },
   "image": {
-    "W": 49,
-    "H": 129
+    "W": 97,
+    "H": 257
   },
   "gpu": {
     "enable": true,
