@@ -128,26 +128,27 @@ def train():
                     epoch, num_epochs, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), train_cost)
 
                 if epoch % test_step == 0:
-                    train_acc, dev_acc = "", ""
+                    train_top_1_acc, train_top_5_acc, dev_top_1_acc, dev_top_5_acc = "", "", "", ""
                     if train_test or dev_test:
                         test_embeddings = model.compute_embeddings(
                             test_img_arrays, sess=sess)
 
                     if train_test:
-                        _, train_acc = data_test(
+                        _, train_top_1_acc, train_top_5_acc = data_test(
                             test_data_map, "train", test_embeddings, sess, model, log=False)
-                        log_str += " train acc is {:.2%}" .format(train_acc)
+                        log_str += " train top-1:{:.2%} top-5:{:.2%}" .format(train_top_1_acc, train_top_5_acc)
                     if dev_test:
-                        _, dev_acc = data_test(
+                        _, dev_top_1_acc, dev_top_5_acc = data_test(
                             test_data_map, "dev", test_embeddings, sess, model, log=False)
-                        log_str += " dev acc is {:.2%}" .format(dev_acc)
+                        log_str += " dev top-1:{:.2%} top-5:{:.2%}" .format(dev_top_1_acc, dev_top_5_acc)
 
+                    # 预计完成时间
                     prec_time_stamp = (time.time() - clock) * \
                         ((num_epochs - epoch) // test_step) + clock
                     clock = time.time()
                     log_str += " >> {} ".format(time.strftime(
                         "%Y-%m-%d %H:%M:%S", time.localtime(prec_time_stamp)))
-                    recorder.record_item(epoch, [train_acc, dev_acc])
+                    recorder.record_item(epoch, [train_top_1_acc, train_top_5_acc, dev_top_1_acc, dev_top_5_acc])
 
                 if epoch % save_step == 0:
                     model.save(sess)

@@ -19,8 +19,10 @@ GLOBAL = {}
 
 
 def data_test(test_data_map, set_type, embeddings, sess, model, log=False, plot=False):
-    """ 对构建好的数据进行测试 """
-    cnt = 0
+    """ 对构建好的数据进行测试
+    速度过慢，可利用 TF API 优化 """
+    top_1_cnt = 0
+    top_5_cnt = 0
     total = 0
     results = []
     test_ops = model.test_ops[set_type]
@@ -35,17 +37,20 @@ def data_test(test_data_map, set_type, embeddings, sess, model, log=False, plot=
             test_ops["embeddings"]: embeddings
         })
 
-        # 计算预测值与真实标签是否相同
-        isRight = min_index == label
-        if isRight:
-            cnt += 1
+        # 计算真实标签排在预测序列第几位（0 即为预测正确，数值越大偏差越大）
+        pred_dist = np.argsort(np.argsort(res))[label]
+
+        # 计算 top-1 与 top-5 准确率
+        if pred_dist < 1:
+            top_1_cnt += 1
+        if pred_dist < 5:
+            top_5_cnt += 1
         total += 1
 
+        top_1_accuracy, top_5_accuracy = top_1_cnt/total, top_5_cnt/total
         if log:
-            # 计算真实标签排在预测序列第几位（0 即为预测正确，数值越大偏差越大）
-            pred_dist = np.argsort(np.argsort(res))[label]
-            print("{:3} y_pred:{:3} y_label:{:3} dist:{:2} {:.2%}".format(
-                i, min_index, label, pred_dist, cnt/total))
+            print("{:3} y_pred:{:3} y_label:{:3} dist:{:2} top-1:{:.2%} top-5:{:.2%}".format(
+                i, min_index, label, pred_dist, top_1_accuracy, top_5_accuracy))
 
         if plot:
             img_plot(
@@ -57,8 +62,8 @@ def data_test(test_data_map, set_type, embeddings, sess, model, log=False, plot=
         results.append(res)
     if log:
         # 计算准确率大小
-        print("{:.2%}".format(cnt/total))
-    return results, cnt/total
+        print("Top-1: {:.2%}, Top-5: {:.2%}".format(top_1_accuracy, top_5_accuracy))
+    return results, top_1_accuracy, top_5_accuracy
 
 
 def test():
@@ -113,9 +118,9 @@ def test():
                                 num_augment, embeddings_length)
 
             # 测试数据
-            res, acc = data_test(
+            res, top_1_accuracy, top_5_accuracy  = data_test(
                 test_data_map, "test", embeddings, sess, model, log=IS_LOG, plot=IS_PLOT)
-            print(acc)
+            print("Top-1: {:.2%}, Top-5: {:.2%}".format(top_1_accuracy, top_5_accuracy))
             print("{:.2f}s".format(time.time() - clock))
 
     # 将结果写入输出文件
