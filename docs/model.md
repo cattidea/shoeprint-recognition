@@ -115,7 +115,7 @@
 > 3. 如果该层需要非线性激活的话，对刚刚拼接的结果进行两次 $1 \times 1$ 卷积，对其中一个结果进行 maxout 激活（k = 4），然后与另一个结果在通道轴上进行拼接
 > 4. 最后对结果进行 Batch_Normalization
 
-更多细节参见[`model/triplet-model.py`](https://github.com/zsync/shoeprint-recognition/blob/master/model/triplet_model.py#L273-L310)
+更多细节参见[`model/triplet-model.py`](https://github.com/cattidea/shoeprint-recognition/blob/master/model/triplet_model.py#L273-L310)
 
 > TIP 为什么这样会有效？我猜想有下原因
 >

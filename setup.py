@@ -25,7 +25,7 @@ setup(
     long_description=get_long_description(),
     license="MIT",
 
-    url="https://zsync.github.io/shoeprint-recognition/",
+    url="https://cattidea.github.io/shoeprint-recognition/",
     author="SigureMo",
     author_email="sigure_mo@163.com",
 

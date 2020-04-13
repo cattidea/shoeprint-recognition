@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 from config_parser.config import PATHS, SEED, TRAIN_HYPER_PARAMS, GPU
-from data_loader.batch_loader import BatchAll
+from data_loader.batch_loader import BatchLoader
 from data_loader.data_loader import data_import, test_data_import
 from data_loader.image import ALL, TRANSPOSE
 from infer.test import data_test
@@ -93,7 +93,7 @@ def train():
                 # train
                 train_costs = []
                 triplet_cache = []
-                for batch_index, triplets in BatchAll(
+                for batch_index, triplets in BatchLoader(
                         model, indices, class_per_batch=class_per_batch, shoe_per_class=shoe_per_class, img_per_shoe=img_per_shoe,
                         img_arrays=img_arrays, sess=sess):
 

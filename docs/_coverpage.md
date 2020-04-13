@@ -4,7 +4,7 @@
 
 > “恒锐杯”鞋印花纹图像类别判定挑战赛
 
-[GitHub](https://github.com/zsync/shoeprint-recognition/)
+[GitHub](https://github.com/cattidea/shoeprint-recognition/)
 [Getting Started](guide)
 
 ![color](#ffffff)

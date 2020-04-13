@@ -3,8 +3,8 @@ import numpy as np
 from config_parser.config import MARGIN
 
 
-class BatchAll():
-    """ Batch all 策略 在线生成 Triplet """
+class BatchLoader():
+    """ Triplet 选取器，FaceNet 实现 """
     def __init__(self, model, indices, class_per_batch, shoe_per_class, img_per_shoe,
                     img_arrays, sess):
         self.model = model
